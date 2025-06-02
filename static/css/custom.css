@@ -1,0 +1,177 @@
+/***********************************************/
+/* NPS bar styles */
+.nps-bar {
+    flex-wrap: wrap;
+    /* let them wrap on small screens if needed */
+}
+
+.nps-segment {
+    width: 30px;
+    /* each segment's width */
+    height: 30px;
+    /* each segment's height */
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* slightly rounded corners */
+    cursor: pointer;
+    margin: 0 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+/* Hover effect for each segment */
+.nps-segment:hover {
+    background-color: #e2e6ea;
+    /* slightly darker gray on hover */
+}
+
+/* "Selected" state for a clicked segment */
+.nps-segment.nps-selected {
+    background-color: #0d6efd;
+    /* e.g. .btn-primary color */
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+/***********************************************/
+/* Adjust the body to prevent content under the fixed navbar */
+body {
+    padding-top: 56px;
+    /* Adjust to the height of the navbar */
+}
+
+/* Navbar Height Alignment */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1040;
+    /* Ensure it stays above other elements */
+}
+
+/* Sidebar */
+.sidebar {
+    width: 200px;
+    background-color: #f8f9fa;
+    overflow-y: auto;
+    transition: width 0.3s ease-in-out;
+    border-right: 1px solid #ddd;
+    height: calc(100vh - 56px);
+    /* Adjust for navbar height */
+    position: fixed;
+    top: 56px;
+    /* Adjust for navbar height */
+    left: 0;
+}
+
+.sidebar.minimized {
+    width: 80px;
+}
+
+/* Adjust Content Area */
+.content-container {
+    margin-left: 200px;
+    padding: 20px;
+    flex: 1;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+body.sidebar-minimized .content-container {
+    margin-left: 80px;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* Sidebar Navigation Links */
+.sidebar .nav-link {
+    color: #333;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: #e9ecef;
+    color: #0056b3;
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar.minimized .nav-link span {
+    display: none;
+}
+
+.sidebar.minimized .nav-link {
+    justify-content: center;
+}
+
+/* Minimalistic Sidebar Toggle Button */
+#sidebarCollapse {
+    color: #000;
+    font-size: 1.25rem;
+    border: none;
+    background: none;
+}
+
+#sidebarCollapse:hover {
+    color: #0056b3;
+}
+
+/* Add margin-top to the sidebar navigation */
+.sidebar .nav {
+    margin-top: 20px;
+    /* Adjust the value as needed */
+}
+
+/* Add space between sidebar items */
+.sidebar .nav-item {
+    margin-bottom: 10px;
+    /* Adjust the value as needed */
+}
+
+/* Center Brand Logo and Name in Navbar */
+.navbar .navbar-brand {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+}
+
+/* Ensure the navbar-brand is centered on large screens */
+@media (min-width: 992px) {
+    .navbar .navbar-brand {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* Disable transition if .preload is on the body */
+.preload .content-container {
+    transition: none !important;
+    opacity: 0;
+}
+
+/* Progress bar styling example for top loading bar */
+#topLoadingBar {
+    position: fixed;
+    top: 56px;
+    /* Ensure it sits below a fixed navbar if you have one */
+    left: 0;
+    width: 100%;
+    z-index: 1050;
+    /* Above main content */
+}
+
+#topLoadingBarProgress {
+    background-color: #007bff;
+    /* or your brand color */
+}

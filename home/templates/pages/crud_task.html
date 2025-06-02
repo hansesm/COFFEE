@@ -1,0 +1,192 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-md-12" style="border-right: 1px solid #ddd;">
+        <div class="d-flex justify-content-between">
+          <h2>{% trans 'Task' %}</h2>
+          <button id="add_task_btn" class="btn btn-success mb-3">{% trans 'Add New Task' %}</button>
+        </div>
+        <table id="task_table" class="display">
+          <thead>
+            <tr>
+              <th>{% trans 'Course' %}</th>
+              <th>{% trans 'Title' %}</th>
+              <th>{% trans 'Active' %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for task in task_set %}
+              <tr data-id="{{ task.id }}"
+                  data-title="{{ task.title }}"
+                  data-active="{{ task.active|yesno:'true,false' }}"
+                  data-description="{{ task.description }}"
+                  data-task_context="{{ task.task_context }}"
+                  data-course_name="{{ task.course.course_name }}"
+                  data-course_id="{{ task.course.id }}">
+                <td>{{ task.course.course_name }}</td>
+                <td>{{ task.title }}</td>
+                <td>{{ task.active }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade"
+         id="taskModal"
+         tabindex="-1"
+         aria-labelledby="modalTitle"
+         aria-hidden="true"
+         data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">{% trans 'Task Details' %}</h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="details_form" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="task_id" name="task_id" />
+              <div class="mb-3">
+                <label for="title" class="form-label">{% trans 'Title' %}</label>
+                <input type="text" class="form-control" id="title" name="title" required />
+              </div>
+              <div class="mb-3">
+                <label for="course_id" class="form-label">{% trans 'Course' %}</label>
+                <select class="form-select" id="course_id" name="course_id" required>
+                  <option value="" disabled selected>{% trans "Select Course" %}</option>
+                  {% for course in course_set %}<option value="{{ course.id }}">{{ course.course_name }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="active" name="active" />
+                <label class="form-check-label" for="active">{% trans 'Active' %}</label>
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">{% trans 'Task Description' %}</label>
+                <textarea class="form-control"
+                          rows="15"
+                          id="description"
+                          name="description"
+                          required></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="task_context" class="form-label">{% trans 'Task Context' %}</label>
+                <textarea class="form-control" rows="10" id="task_context" name="task_context"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="delete_task_btn">{% trans 'Delete' %}</button>
+            <button type="submit" class="btn btn-primary" form="details_form">{% trans 'Save' %}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var table = $('#task_table').DataTable();
+      var taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
+
+      $('#task_table tbody').on('click', 'tr', function () {
+        var data = table.row(this).data();
+        $('#task_id').val($(this).data('id'));
+        $('#title').val($(this).data('title'));
+        var isActive = $(this).data('active') === 'True' || $(this).data('active') === true;
+        $('#active').prop('checked', isActive);
+        $('#description').val($(this).data('description'));
+        $('#task_context').val($(this).data('task_context'));
+        var courseId = $(this).data('course_id');
+        $('#course_id').val(courseId);
+        $('#modalTitle').text('{% trans "Edit Task" %}');
+        taskModal.show();
+      });
+
+      $('#add_task_btn').on('click', function () {
+        $('#task_id').val('');
+        $('#details_form')[0].reset();
+        $('#modalTitle').text('{% trans "Add New Task" %}');
+        taskModal.show();
+      });
+
+      $('#details_form').on('submit', function (e) {
+        e.preventDefault();
+        var taskData = {
+          task_id: $('#task_id').val(),
+          title: $('#title').val(),
+          active: $('#active').is(':checked') ? "true" : "false",
+          description: $('#description').val(),
+          task_context: $('#task_context').val(),
+          course_id: $('#course_id').val(),
+          csrfmiddlewaretoken: '{{ csrf_token }}',
+          request_type: 'update'
+        };
+
+        $.ajax({
+          url: "{% url 'task' %}",
+          method: 'POST',
+          data: taskData,
+          success: function (response) {
+            if (response.success) {
+              taskModal.hide();
+              location.reload();
+            } else {
+              displayAlert(response.error || '{% trans "Error saving task data." %}');
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('{% trans "Error saving task data:" %}', error);
+            displayAlert('{% trans "An error occurred:" %} ' + error);
+          }
+        });
+      });
+
+      $('#delete_task_btn').on('click', function () {
+        var task_id = $('#task_id').val();
+        if (task_id) {
+          if (confirm('{% trans "Are you sure you want to delete this task?" %}')) {
+            $.ajax({
+              url: "{% url 'task' %}",
+              method: 'POST',
+              data: {
+                task_id: task_id,
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                request_type: 'delete'
+              },
+              success: function (response) {
+                if (response.success) {
+                  taskModal.hide();
+                  location.reload();
+                } else {
+                  displayAlert(response.error || '{% trans "Error deleting task." %}');
+                }
+              },
+              error: function (xhr, status, error) {
+                console.error('{% trans "Error deleting task:" %}', error);
+                displayAlert('{% trans "An error occurred:" %} ' + error);
+              }
+            });
+          }
+        } else {
+          displayAlert('{% trans "No task selected to delete." %}');
+        }
+      });
+
+      function displayAlert(message) {
+        alert(message);
+      }
+    });
+  </script>
+{% endblock %}

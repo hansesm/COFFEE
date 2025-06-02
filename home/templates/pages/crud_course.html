@@ -1,0 +1,281 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-md-12" style="border-right: 1px solid #ddd;">
+        <div class="d-flex justify-content-between">
+          <h2>{% trans 'Courses' %}</h2>
+          <button id="add_course_btn" class="btn btn-success mb-3">{% trans 'Add New Course' %}</button>
+        </div>
+        <table id="course_table" class="display">
+          <thead>
+            <tr>
+              <th>{% trans 'Faculty' %}</th>
+              <th>{% trans 'Study Programme' %}</th>
+              <th>{% trans 'Chair' %}</th>
+              <th>{% trans 'Term' %}</th>
+              <th>{% trans 'Course Name' %}</th>
+              <th>{% trans 'Course Number' %}</th>
+              <th>{% trans 'Active' %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in course_set %}
+              <tr data-id="{{ course.id }}"
+                  data-faculty="{{ course.faculty }}"
+                  data-study_programme="{{ course.study_programme }}"
+                  data-chair="{{ course.chair }}"
+                  data-term="{{ course.term }}"
+                  data-course_name="{{ course.course_name }}"
+                  data-course_number="{{ course.course_number }}"
+                  data-active="{{ course.active|yesno:'true,false' }}"
+                  data-course_context="{{ course.course_context }}"
+                  data-editing_groups=" {% for grp in course.editing_groups.all %} {% if not forloop.first %},{% endif %} {{ grp.name }} {% endfor %} "
+                  data-viewing_groups=" {% for grp in course.viewing_groups.all %} {% if not forloop.first %},{% endif %} {{ grp.name }} {% endfor %} "
+                  -->
+                <td>{{ course.faculty }}</td>
+                <td>{{ course.study_programme }}</td>
+                <td>{{ course.chair }}</td>
+                <td>{{ course.term }}</td>
+                <td>{{ course.course_name }}</td>
+                <td>{{ course.course_number }}</td>
+                <td>{{ course.active }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade"
+         id="courseModal"
+         tabindex="-1"
+         aria-labelledby="modalTitle"
+         aria-hidden="true"
+         data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">{% trans 'Course Details' %}</h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="details_form" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="course_id" name="course_id" />
+              <!-- Faculty -->
+              <div class="mb-3">
+                <label for="faculty" class="form-label">{% trans 'Faculty' %}</label>
+                <input type="text" class="form-control" id="faculty" name="faculty" required />
+              </div>
+              <!-- Study Programme -->
+              <div class="mb-3">
+                <label for="study_programme" class="form-label">{% trans 'Study Program' %}</label>
+                <input type="text"
+                       class="form-control"
+                       id="study_programme"
+                       name="study_programme"
+                       required />
+              </div>
+              <!-- Chair -->
+              <div class="mb-3">
+                <label for="chair" class="form-label">{% trans 'Chair' %}</label>
+                <input type="text" class="form-control" id="chair" name="chair" required />
+              </div>
+              <!-- Term -->
+              <div class="mb-3">
+                <label for="term" class="form-label">{% trans 'Semester' %}</label>
+                <input type="text" class="form-control" id="term" name="term" required />
+              </div>
+              <!-- Course Name -->
+              <div class="mb-3">
+                <label for="course_name" class="form-label">{% trans 'Course Name' %}</label>
+                <input type="text"
+                       class="form-control"
+                       id="course_name"
+                       name="course_name"
+                       required />
+              </div>
+              <!-- Course Number -->
+              <div class="mb-3">
+                <label for="course_number" class="form-label">{% trans 'Course Number' %}</label>
+                <input type="text"
+                       class="form-control"
+                       id="course_number"
+                       name="course_number"
+                       required />
+              </div>
+              <!-- Active Checkbox -->
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="active" name="active" />
+                <label class="form-check-label" for="active">{% trans 'Active' %}</label>
+              </div>
+              <!-- Editing Groups (read-only) -->
+              <div class="mb-3">
+                <label class="form-label">{% trans 'Editing Groups' %}</label>
+                <div id="editing_groups_display"
+                     class="form-control"
+                     style="background-color: #e9ecef;
+                            cursor: not-allowed"
+                     readonly></div>
+              </div>
+              <!-- Viewing Groups (read-only) -->
+              <div class="mb-3">
+                <label class="form-label">{% trans 'Viewing Groups' %}</label>
+                <div id="viewing_groups_display"
+                     class="form-control"
+                     style="background-color: #e9ecef;
+                            cursor: not-allowed"
+                     readonly></div>
+              </div>
+              <!-- Course Context -->
+              <div class="mb-3">
+                <label for="course_context" class="form-label">{% trans 'Course Context' %}</label>
+                <textarea class="form-control"
+                          rows="10"
+                          id="course_context"
+                          name="course_context"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="delete_course_btn">{% trans 'Delete' %}</button>
+            <button type="submit" class="btn btn-primary" form="details_form">{% trans 'Save' %}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+  console.log('Custom JavaScript code is running: crud_course');
+  var table = $('#course_table').DataTable();
+
+  var courseModalElement = document.getElementById('courseModal');
+  var courseModal = new bootstrap.Modal(courseModalElement);
+
+  // When a row is clicked, fill the modal fields with that row's data attributes
+  $('#course_table tbody').on('click', 'tr', function () {
+    // Use .data() to get the data attributes
+    $('#course_id').val($(this).data('id'));
+    $('#faculty').val($(this).data('faculty'));
+    $('#study_programme').val($(this).data('study_programme'));
+    $('#chair').val($(this).data('chair'));
+    $('#term').val($(this).data('term'));
+    $('#course_name').val($(this).data('course_name'));
+    $('#course_number').val($(this).data('course_number'));
+
+    // Use the boolean value directly from .data('active')
+    var isActive = $(this).data('active');
+    $('#active').prop('checked', isActive);
+
+    $('#course_context').val($(this).data('course_context'));
+
+    // Display editing groups (as a comma-separated string)
+    var editingGroupsString = $(this).data('editing_groups') || "";
+    $('#editing_groups_display').text(editingGroupsString);
+
+    // Display viewing groups
+    var viewingGroupsString = $(this).data('viewing_groups') || "";
+    $('#viewing_groups_display').text(viewingGroupsString);
+
+    $('#modalTitle').text('{% trans "Edit Course" %}');
+    courseModal.show();
+  });
+
+  // Add a new course
+  $('#add_course_btn').on('click', function () {
+    $('#course_id').val('');
+    $('#details_form')[0].reset();
+
+    // Clear the read-only fields
+    $('#editing_groups_display').text('');
+    $('#viewing_groups_display').text('');
+
+    $('#modalTitle').text('{% trans "Add New Course" %}');
+    courseModal.show();
+  });
+
+  // Save (Create or Update)
+  $('#details_form').on('submit', function (e) {
+    e.preventDefault();
+
+    var courseData = {
+      course_id: $('#course_id').val(),
+      faculty: $('#faculty').val(),
+      study_programme: $('#study_programme').val(),
+      chair: $('#chair').val(),
+      term: $('#term').val(),
+      course_name: $('#course_name').val(),
+      course_number: $('#course_number').val(),
+      active: $('#active').is(':checked') ? 'true' : 'false',
+      course_context: $('#course_context').val(),
+      csrfmiddlewaretoken: '{{ csrf_token }}',
+      request_type: 'update'
+    };
+
+    $.ajax({
+      url: "{% url 'course' %}",
+      method: 'POST',
+      data: courseData,
+      success: function (response) {
+        if (response.success) {
+          courseModal.hide();
+          location.reload();
+        } else {
+          displayAlert(response.error || '{% trans "Error saving course data." %}');
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error('Error saving course data:', error);
+        displayAlert('{% trans "An error occurred:" %} ' + error);
+      }
+    });
+  });
+
+  // Delete
+  $('#delete_course_btn').on('click', function () {
+    var course_id = $('#course_id').val();
+    if (course_id) {
+      if (confirm('{% trans "Are you sure you want to delete this course?" %}')) {
+        $.ajax({
+          url: "{% url 'course' %}",
+          method: 'POST',
+          data: {
+            course_id: course_id,
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            request_type: 'delete'
+          },
+          success: function (response) {
+            if (response.success) {
+              courseModal.hide();
+              location.reload();
+            } else {
+              displayAlert(response.error || '{% trans "Error deleting course." %}');
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error deleting course:', error);
+            displayAlert('{% trans "An error occurred:" %} ' + error);
+          }
+        });
+      }
+    } else {
+      displayAlert('{% trans "No course selected to delete." %}');
+    }
+  });
+
+  function displayAlert(message) {
+    alert(message);
+  }
+});
+  </script>
+{% endblock %}

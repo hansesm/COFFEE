@@ -1,0 +1,15 @@
+{% extends 'layouts/base.html' %}
+{% load i18n static %}
+{% block content %}
+    <div class="container py-4">
+        <h1>{% trans "Account Information" %}</h1>
+        <p>
+            <strong>{% trans "Username:" %}</strong> {{ request.user.username }}
+        </p>
+        <p>
+            <strong>{% trans "Email:" %}</strong> {{ request.user.email }}
+        </p>
+        <!-- Add other fields as needed -->
+        <a class="btn btn-primary" href="{% url 'password_change' %}">{% trans "Change Password" %}</a>
+    </div>
+{% endblock %}

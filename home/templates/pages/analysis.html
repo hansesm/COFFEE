@@ -1,0 +1,141 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+    <!-- Include highlight.js assets -->
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <div class="container-fluid py-4">
+        <h2>{% trans "Feedback Sessions" %}</h2>
+        <!-- Table displaying session summary -->
+        <table id="feedbacksession_table" class="display">
+            <thead>
+                <tr>
+                    <th>{% trans "Timestamp" %}</th>
+                    <th>{% trans "Course" %}</th>
+                    <th>{% trans "Task Title" %}</th>
+                    <th>{% trans "Staff" %}</th>
+                    <th>{% trans "NPS Score" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in feedbacksession_list %}
+                    <tr id="row_{{ session.id }}"
+                        data-session-id="{{ session.id }}"
+                        data-timestamp="{{ session.timestamp }}"
+                        data-course="{{ session.course }}"
+                        data-staff="{{ session.staff }}"
+                        data-submission="{{ session.submission }}"
+                        data-nps="{{ session.nps }}"
+                        data-task="{{ session.task }}">
+                        <td>{{ session.timestamp }}</td>
+                        <td>{{ session.course }}</td>
+                        <td>{{ session.task }}</td>
+                        <td>{{ session.staff }}</td>
+                        <td>{{ session.nps }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Explanation and Download CSV Button -->
+        <div class="mt-3">
+            <p>{% trans "Click the button below to download all feedback session data as a CSV file." %}</p>
+            <a href="{% url 'feedback_csv' %}" class="btn btn-primary">{% trans "Download CSV" %}</a>
+        </div>
+        <!-- Hidden JSON script tags for each session -->
+        {% for session in feedbacksession_list %}
+            <script type="application/json" id="feedback_data_{{ session.id }}">{{ session.criteria_json|safe }}</script>
+        {% endfor %}
+        <!-- Modal for displaying detailed feedback session info -->
+        <div class="modal fade"
+             id="feedbackSessionModal"
+             tabindex="-1"
+             aria-labelledby="modalTitle"
+             aria-hidden="true"
+             data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">{% trans "Feedback Session Details" %}</h5>
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">{% trans "Timestamp" %}</dt>
+                            <dd class="col-sm-9" id="modal_timestamp">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "Course" %}</dt>
+                            <dd class="col-sm-9" id="modal_course">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "Task Title" %}</dt>
+                            <dd class="col-sm-9" id="modal_task">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "Staff" %}</dt>
+                            <dd class="col-sm-9" id="modal_staff">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "Submission" %}</dt>
+                            <dd class="col-sm-9" id="modal_submission">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "NPS Score" %}</dt>
+                            <dd class="col-sm-9" id="modal_nps">
+                            </dd>
+                            <dt class="col-sm-3">{% trans "Feedback Data" %}</dt>
+                            <dd class="col-sm-9">
+                                <!-- JSON data field now takes full width -->
+                                <div class="col-12">
+                                    <pre class="w-100 p-2 border rounded bg-light">
+                                        <code id="modal_feedback_data" class="json"></code>
+                                    </pre>
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize DataTables with default sorting on the first column (Timestamp) descending
+            var table = $('#feedbacksession_table').DataTable({
+                "order": [[0, "desc"]]
+            });
+
+            // Create a Bootstrap modal instance
+            var detailsModal = new bootstrap.Modal(document.getElementById('feedbackSessionModal'));
+
+            // When a table row is clicked, update and show the modal with session details
+            $('#feedbacksession_table tbody').on('click', 'tr', function() {
+                var $row = $(this);
+
+                // Update modal fields using data attributes from the row
+                $('#modal_timestamp').text($row.data('timestamp'));
+                $('#modal_course').text($row.data('course'));
+                $('#modal_staff').text($row.data('staff'));
+                $('#modal_submission').text($row.data('submission'));
+                $('#modal_nps').text($row.data('nps'));
+                $('#modal_task').text($row.data('task'));
+
+                // Get filtered JSON data from the hidden <script> tag for this session
+                var rowId = $row.data('session-id');
+                var scriptEl = document.getElementById("feedback_data_" + rowId);
+                var rawJSON = scriptEl.textContent.trim();
+                var criteriaData = JSON.parse(rawJSON);
+
+                // Set pretty-printed JSON into the code block and apply syntax highlighting
+                var codeElement = document.getElementById("modal_feedback_data");
+                codeElement.textContent = JSON.stringify(criteriaData, null, 2);
+                hljs.highlightElement(codeElement);
+
+                // Show the modal
+                detailsModal.show();
+            });
+        });
+</script>
+{% endblock scripts %}

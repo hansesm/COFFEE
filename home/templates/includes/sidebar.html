@@ -1,0 +1,71 @@
+{% load i18n static %}
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar bg-light">
+  <!-- Sidebar Navigation Links -->
+  <ul class="nav flex-column">
+    <!-- Home Link -->
+    <li class="nav-item">
+      <a href="/"
+         class="nav-link {% if request.path == '/' %}active{% endif %}">
+        <i class="fas fa-home me-2"></i>
+        <span>{% trans 'Home' %}</span>
+      </a>
+    </li>
+    <!-- Disclaimer Link -->
+    <li class="nav-item">
+      <a href="/policies/"
+         class="nav-link {% if request.path == '/policies/' %}active{% endif %}">
+        <i class="fas fa-info-circle me-2"></i>
+        <span>{% trans 'Policies' %}</span>
+      </a>
+    </li>
+    <!-- Manager Section -->
+    {% if is_manager %}
+      <li class="nav-item">
+        <a class="nav-link">
+          <i class="fas fa-cogs me-2"></i>
+          <span>{% trans 'Administration' %}</span>
+        </a>
+        <ul class="nav flex-column ms-3">
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/course/' %}active{% endif %}"
+               href="/course">
+              <i class="fas fa-book me-2"></i>
+              <span>{% trans 'Course' %}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/task/' %}active{% endif %}"
+               href="/task">
+              <i class="fas fa-tasks me-2"></i>
+              <span>{% trans 'Task' %}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/criteria/' %}active{% endif %}"
+               href="/criteria">
+              <i class="fas fa-list me-2"></i>
+              <span>{% trans 'Criteria' %}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/managefeedback/' %}active{% endif %}"
+               href="/managefeedback">
+              <i class="fas fa-comment-dots me-2"></i>
+              <span>{% trans 'Feedbacks' %}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/analysis/' %}active{% endif %}"
+               href="/analysis">
+              <i class="fas fa-magnifying-glass-chart me-2"></i>
+              <span>{% trans 'Analysis' %}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+    {% endif %}
+    <!-- Additional Links -->
+    <!-- Add other sidebar links here if needed -->
+  </ul>
+</div>

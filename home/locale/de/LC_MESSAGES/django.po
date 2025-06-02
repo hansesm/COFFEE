@@ -1,0 +1,527 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-17 15:20+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: home/forms.py:71 home/forms.py:107
+msgid "Password"
+msgstr "Passwort"
+
+#: home/forms.py:77
+msgid "Password Confirmation"
+msgstr "Passwortbestätigung"
+
+#: home/templates/accounts/login.html:70
+#: home/templates/accounts/register.html:83
+msgid "Please correct the error below."
+msgstr "Bitte beheben Sie den untenstehenden Fehler."
+
+#: home/templates/accounts/login.html:72
+#: home/templates/accounts/register.html:85
+msgid "Please correct the errors below."
+msgstr "Bitte beheben Sie die untenstehenden Fehler."
+
+#: home/templates/includes/navigation.html:12
+msgid "COFFEE @ Feedbackcentre"
+msgstr "COFFEE @ Feedbackzentrum"
+
+#: home/templates/includes/navigation.html:21
+msgid "Toggle navigation"
+msgstr "Navigation umschalten"
+
+#: home/templates/includes/navigation.html:64
+msgid "Hello,"
+msgstr "Hallo,"
+
+#: home/templates/includes/navigation.html:69
+msgid "Logout"
+msgstr "Abmelden"
+
+#: home/templates/includes/navigation.html:76
+msgid "Login"
+msgstr "Anmelden"
+
+#: home/templates/includes/sidebar.html:11
+msgid "Home"
+msgstr "Startseite"
+
+#: home/templates/includes/sidebar.html:19
+msgid "Policies"
+msgstr "Nutzungshinweise"
+
+#: home/templates/includes/sidebar.html:27
+msgid "Administration"
+msgstr "Verwaltung"
+
+#: home/templates/includes/sidebar.html:34
+#: home/templates/pages/analysis.html:16 home/templates/pages/analysis.html:71
+#: home/templates/pages/crud_criteria.html:15
+#: home/templates/pages/crud_criteria.html:70
+#: home/templates/pages/crud_feedback.html:15
+#: home/templates/pages/crud_feedback.html:61
+#: home/templates/pages/crud_task.html:15
+#: home/templates/pages/crud_task.html:63
+msgid "Course"
+msgstr "Kurs"
+
+#: home/templates/includes/sidebar.html:41
+#: home/templates/pages/crud_feedback.html:16
+#: home/templates/pages/crud_feedback.html:67
+#: home/templates/pages/crud_task.html:9
+msgid "Task"
+msgstr "Aufgabe"
+
+#: home/templates/includes/sidebar.html:48
+#: home/templates/pages/crud_criteria.html:9
+#: home/templates/pages/crud_feedback.html:100
+msgid "Criteria"
+msgstr "Kriterien"
+
+#: home/templates/includes/sidebar.html:55
+#: home/templates/pages/crud_feedback.html:9
+msgid "Feedbacks"
+msgstr "Feedbacks"
+
+#: home/templates/includes/sidebar.html:62
+msgid "Analysis"
+msgstr ""
+
+#: home/templates/pages/account.html:5
+msgid "Account Information"
+msgstr "Account Informationen"
+
+#: home/templates/pages/account.html:7
+msgid "Username:"
+msgstr "Nutzername"
+
+#: home/templates/pages/account.html:10
+msgid "Email:"
+msgstr "Email"
+
+#: home/templates/pages/account.html:13
+msgid "Change Password"
+msgstr "Passwort ändern"
+
+#: home/templates/pages/analysis.html:10
+msgid "Feedback Sessions"
+msgstr "Feedback Details"
+
+#: home/templates/pages/analysis.html:15 home/templates/pages/analysis.html:68
+msgid "Timestamp"
+msgstr ""
+
+#: home/templates/pages/analysis.html:17 home/templates/pages/analysis.html:74
+msgid "Task Title"
+msgstr "Aufgaben Titel"
+
+#: home/templates/pages/analysis.html:18 home/templates/pages/analysis.html:77
+msgid "Staff"
+msgstr "Staff"
+
+#: home/templates/pages/analysis.html:19 home/templates/pages/analysis.html:83
+msgid "NPS Score"
+msgstr "Score"
+
+#: home/templates/pages/analysis.html:43
+msgid ""
+"Click the button below to download all feedback session data as a CSV file."
+msgstr "Hier können alle Feedbackdaten als CSV Datei heruntergeladen werden."
+
+#: home/templates/pages/analysis.html:44
+msgid "Download CSV"
+msgstr "Download CSV"
+
+#: home/templates/pages/analysis.html:60
+msgid "Feedback Session Details"
+msgstr "Feedback Details"
+
+#: home/templates/pages/analysis.html:80
+msgid "Submission"
+msgstr "Lösung"
+
+#: home/templates/pages/analysis.html:86
+msgid "Feedback Data"
+msgstr "Feedback Details"
+
+#: home/templates/pages/crud_course.html:9
+msgid "Courses"
+msgstr "Kurse"
+
+#: home/templates/pages/crud_course.html:10
+#: home/templates/pages/crud_course.html:203
+msgid "Add New Course"
+msgstr "Neuen Kurs hinzufügen"
+
+#: home/templates/pages/crud_course.html:15
+#: home/templates/pages/crud_course.html:73
+#: home/templates/pages/feedback_list.html:10
+msgid "Faculty"
+msgstr "Fakultät"
+
+#: home/templates/pages/crud_course.html:16
+#: home/templates/pages/feedback_list.html:19
+msgid "Study Programme"
+msgstr "Studiengang"
+
+#: home/templates/pages/crud_course.html:17
+#: home/templates/pages/crud_course.html:87
+#: home/templates/pages/feedback_list.html:29
+msgid "Chair"
+msgstr "Lehrgebiet"
+
+#: home/templates/pages/crud_course.html:18
+#: home/templates/pages/feedback_list.html:38
+msgid "Term"
+msgstr "Semester"
+
+#: home/templates/pages/crud_course.html:19
+#: home/templates/pages/crud_course.html:97
+#: home/templates/pages/feedback_list.html:47
+msgid "Course Name"
+msgstr "Kursname"
+
+#: home/templates/pages/crud_course.html:20
+#: home/templates/pages/crud_course.html:106
+msgid "Course Number"
+msgstr "Kursnummer"
+
+#: home/templates/pages/crud_course.html:21
+#: home/templates/pages/crud_course.html:116
+#: home/templates/pages/crud_criteria.html:19
+#: home/templates/pages/crud_criteria.html:78
+#: home/templates/pages/crud_feedback.html:17
+#: home/templates/pages/crud_feedback.html:91
+#: home/templates/pages/crud_task.html:17
+#: home/templates/pages/crud_task.html:71
+msgid "Active"
+msgstr "Aktiv"
+
+#: home/templates/pages/crud_course.html:61
+msgid "Course Details"
+msgstr "Kursdetails"
+
+#: home/templates/pages/crud_course.html:78
+msgid "Study Program"
+msgstr "Studiengang"
+
+#: home/templates/pages/crud_course.html:92
+msgid "Semester"
+msgstr "Semester"
+
+#: home/templates/pages/crud_course.html:120
+msgid "Editing Groups"
+msgstr "Zugriffsberechtigte Gruppen"
+
+#: home/templates/pages/crud_course.html:129
+msgid "Viewing Groups"
+msgstr "Zugriffsberechtigte Gruppen"
+
+#: home/templates/pages/crud_course.html:138
+msgid "Course Context"
+msgstr "Kurskontext"
+
+#: home/templates/pages/crud_course.html:147
+#: home/templates/pages/crud_criteria.html:111
+#: home/templates/pages/crud_feedback.html:112
+#: home/templates/pages/crud_task.html:88
+msgid "Delete"
+msgstr "Löschen"
+
+#: home/templates/pages/crud_course.html:148
+#: home/templates/pages/crud_criteria.html:112
+#: home/templates/pages/crud_feedback.html:113
+#: home/templates/pages/crud_task.html:89
+msgid "Save"
+msgstr "Speichern"
+
+#: home/templates/pages/crud_course.html:190
+msgid "Edit Course"
+msgstr "Kurs bearbeiten"
+
+#: home/templates/pages/crud_course.html:234
+msgid "Error saving course data."
+msgstr "Fehler beim Speichern der Kurs-Daten."
+
+#: home/templates/pages/crud_course.html:239
+#: home/templates/pages/crud_course.html:267
+#: home/templates/pages/crud_criteria.html:199
+#: home/templates/pages/crud_criteria.html:226
+#: home/templates/pages/crud_feedback.html:261
+#: home/templates/pages/crud_feedback.html:288
+#: home/templates/pages/crud_task.html:151
+#: home/templates/pages/crud_task.html:178
+msgid "An error occurred:"
+msgstr "Es ist ein Fehler aufgetreten:"
+
+#: home/templates/pages/crud_course.html:248
+msgid "Are you sure you want to delete this course?"
+msgstr "Sind Sie sicher, dass Sie diesen Kurs löschen möchten?"
+
+#: home/templates/pages/crud_course.html:262
+msgid "Error deleting course."
+msgstr "Fehler beim Löschen des Kurses."
+
+#: home/templates/pages/crud_course.html:272
+msgid "No course selected to delete."
+msgstr "Kein Kurs zum Löschen ausgewählt."
+
+#: home/templates/pages/crud_criteria.html:10
+#: home/templates/pages/crud_criteria.html:165
+msgid "Add New Criteria"
+msgstr "Neue Kriterien hinzufügen"
+
+#: home/templates/pages/crud_criteria.html:16
+#: home/templates/pages/crud_criteria.html:66
+#: home/templates/pages/crud_task.html:16
+#: home/templates/pages/crud_task.html:59
+msgid "Title"
+msgstr "Titel"
+
+#: home/templates/pages/crud_criteria.html:17
+#: home/templates/pages/crud_criteria.html:85
+msgid "Language Model"
+msgstr "Sprachmodell"
+
+#: home/templates/pages/crud_criteria.html:18
+msgid "Tags"
+msgstr "Tags"
+
+#: home/templates/pages/crud_criteria.html:55
+msgid "Criteria Details"
+msgstr "Kriteriendetails"
+
+#: home/templates/pages/crud_criteria.html:72
+#: home/templates/pages/crud_task.html:65
+msgid "Select Course"
+msgstr "Kurs auswählen"
+
+#: home/templates/pages/crud_criteria.html:81
+msgid "Criteria Description"
+msgstr "Kriterienbeschreibung"
+
+#: home/templates/pages/crud_criteria.html:87
+msgid "Select Language Model"
+msgstr "Sprachmodell"
+
+#: home/templates/pages/crud_criteria.html:92
+#: home/templates/pages/feedback.html:113
+msgid "Prompt"
+msgstr "Prompt"
+
+#: home/templates/pages/crud_criteria.html:96
+msgid "Available keywords:"
+msgstr "Nutzbare Keywörter"
+
+#: home/templates/pages/crud_criteria.html:101
+msgid "Sequels"
+msgstr "Fortsetzungen"
+
+#: home/templates/pages/crud_criteria.html:105
+msgid "Tag"
+msgstr "Tag"
+
+#: home/templates/pages/crud_criteria.html:148
+msgid "Edit Criteria"
+msgstr "Kriterien bearbeiten"
+
+#: home/templates/pages/crud_criteria.html:195
+msgid "Error saving criteria data."
+msgstr "Fehler beim Speichern der Kriterien-Daten."
+
+#: home/templates/pages/crud_criteria.html:208
+msgid "Are you sure you want to delete this criteria?"
+msgstr "Sind Sie sicher, dass Sie dieses Kriterium löschen möchten?"
+
+#: home/templates/pages/crud_criteria.html:222
+msgid "Error deleting criteria."
+msgstr "Fehler beim Löschen der Kriterien."
+
+#: home/templates/pages/crud_criteria.html:231
+msgid "No criteria selected to delete."
+msgstr "Kein Kriterium zum Löschen ausgewählt."
+
+#: home/templates/pages/crud_feedback.html:10
+#: home/templates/pages/crud_feedback.html:179
+msgid "Add New Feedback"
+msgstr "Neues Feedback hinzufügen"
+
+#: home/templates/pages/crud_feedback.html:48
+msgid "Feedback Details"
+msgstr "Feedback-Details"
+
+#: home/templates/pages/crud_feedback.html:76
+msgid "Criteria Set"
+msgstr "Kriterien-Set"
+
+#: home/templates/pages/crud_feedback.html:84
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: home/templates/pages/crud_feedback.html:101
+msgid "Actions"
+msgstr "Aktionen"
+
+#: home/templates/pages/crud_feedback.html:170
+msgid "Edit Feedback"
+msgstr "Feedback bearbeiten"
+
+#: home/templates/pages/crud_feedback.html:204
+msgid "Remove"
+msgstr "Entfernen"
+
+#: home/templates/pages/crud_feedback.html:257
+msgid "Error saving feedback data."
+msgstr "Fehler beim Speichern der Feedback-Daten."
+
+#: home/templates/pages/crud_feedback.html:270
+msgid "Are you sure you want to delete this feedback?"
+msgstr "Sind Sie sicher, dass Sie dieses Feedback löschen möchten?"
+
+#: home/templates/pages/crud_feedback.html:284
+msgid "Error deleting feedback."
+msgstr "Fehler beim Löschen des Feedbacks."
+
+#: home/templates/pages/crud_feedback.html:293
+msgid "No feedback selected to delete."
+msgstr "Kein Feedback zum Löschen ausgewählt."
+
+#: home/templates/pages/crud_feedback.html:332
+msgid "Error fetching related data"
+msgstr "Fehler beim Abrufen der zugehörigen Daten"
+
+#: home/templates/pages/crud_task.html:10
+#: home/templates/pages/crud_task.html:120
+msgid "Add New Task"
+msgstr "Neue Aufgabe hinzufügen"
+
+#: home/templates/pages/crud_task.html:48
+msgid "Task Details"
+msgstr "Aufgabendetails"
+
+#: home/templates/pages/crud_task.html:74
+msgid "Task Description"
+msgstr "Aufgabenstellung"
+
+#: home/templates/pages/crud_task.html:82
+msgid "Task Context"
+msgstr "Aufgabenkontext"
+
+#: home/templates/pages/crud_task.html:113
+msgid "Edit Task"
+msgstr "Aufgabe bearbeiten"
+
+#: home/templates/pages/crud_task.html:146
+msgid "Error saving task data."
+msgstr "Fehler beim Speichern der Aufgabendaten."
+
+#: home/templates/pages/crud_task.html:150
+msgid "Error saving task data:"
+msgstr "Fehler beim Speichern der Aufgabendaten:"
+
+#: home/templates/pages/crud_task.html:159
+msgid "Are you sure you want to delete this task?"
+msgstr "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten?"
+
+#: home/templates/pages/crud_task.html:173
+msgid "Error deleting task."
+msgstr "Fehler beim Löschen der Aufgabe."
+
+#: home/templates/pages/crud_task.html:177
+msgid "Error deleting task:"
+msgstr "Fehler beim Löschen der Aufgabe:"
+
+#: home/templates/pages/crud_task.html:183
+msgid "No task selected to delete."
+msgstr "Keine Aufgabe zum Löschen ausgewählt."
+
+#: home/templates/pages/feedback.html:25
+msgid "Your Solution"
+msgstr "Ihre Lösung"
+
+#: home/templates/pages/feedback.html:38
+msgid "Accept notes of use and generate feedback"
+msgstr "Nutzungshinweise akzeptieren und Feedback generieren"
+
+#: home/templates/pages/feedback.html:40
+msgid ""
+"The feedback is generated by generative AI. The results may contain errors "
+"or be invented by the system. Check all statements critically before using "
+"them."
+msgstr ""
+"Das Feedback wird durch generative KI erzeugt. Die Ergebnisse können Fehler "
+"enthalten oder vom System frei erfunden sein. Überprüfe alle Aussagen "
+"kritisch, bevor du sie verwendest."
+
+#: home/templates/pages/feedback.html:42
+msgid ""
+"\n"
+"By exchanging messages with COFFEE, you agree to our \n"
+"<a href=\"/policies/\">Notes of Use</a> \n"
+"and confirm that you have read our <a href=\"/policies/\">Disclaimer</a>.\n"
+msgstr ""
+"Durch das Austauschen von Nachrichten mit COFFEE \n"
+"stimmst du unseren <a href=\"/policies/\">Nutzungshinweise</a> \n"
+"zu und bestätigst, dass du unseren <a href=\"/policies/\">Disclaimer</a> "
+"gelesen hast."
+
+#: home/templates/pages/feedback.html:65
+msgid "How helpful was this feedback for you?"
+msgstr "Wie hilfreich war dieses Feedback für dich?"
+
+#: home/templates/pages/feedback.html:72
+msgid "Not helpful at all"
+msgstr "Überhaupt nicht hilfreich"
+
+#: home/templates/pages/feedback.html:73
+msgid "Very helpful"
+msgstr "Sehr hilfreich"
+
+#: home/templates/pages/feedback.html:88
+msgid "Info"
+msgstr "Info"
+
+#: home/templates/pages/feedback_list.html:12
+msgid "All Faculties"
+msgstr "Alle Fakultäten"
+
+#: home/templates/pages/feedback_list.html:21
+msgid "All Study Programmes"
+msgstr "Alle Studiengänge"
+
+#: home/templates/pages/feedback_list.html:31
+msgid "All Chairs"
+msgstr "Alle Lehrgebiete"
+
+#: home/templates/pages/feedback_list.html:40
+msgid "All Terms"
+msgstr "Alle Semester"
+
+#: home/templates/pages/feedback_list.html:49
+msgid "All Courses"
+msgstr "Alle Kurse"
+
+#: home/templates/pages/feedback_list.html:57
+msgid "Filter"
+msgstr "Filter"
+
+#: home/templates/pages/feedback_list.html:76
+msgid "Continue with this Task"
+msgstr "Weiter mit dieser Aufgabe"
+
+#: home/templates/pages/feedback_list.html:81
+msgid "No tasks available."
+msgstr "Keine Aufgaben vorhanden."

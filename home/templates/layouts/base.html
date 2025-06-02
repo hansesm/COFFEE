@@ -1,0 +1,37 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'en-us' }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>
+      KI Feedback
+      {% block title %}{% endblock %}
+    </title>
+    <!-- Favicon -->
+    <link rel="apple-touch-icon"
+          sizes="76x76"
+          href="{% static 'img/apple-icon.png' %}" />
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}" />
+    <!-- Extra Styles -->
+    {% block extrastyle %}{% endblock %}
+  </head>
+  <body class="bg-gray-100 preload">
+    <!-- Include Navigation -->
+    {% include 'includes/navigation.html' %}
+    <!-- Main Wrapper -->
+    <div class="d-flex">
+      <!-- Include Sidebar -->
+      {% include 'includes/sidebar.html' %}
+      <!-- Main Content -->
+      <div class="content-container">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+    <!-- Include Scripts -->
+    {% include 'includes/scripts.html' %}
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

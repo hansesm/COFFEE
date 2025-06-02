@@ -1,0 +1,86 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Filter section -->
+    <form method="get" class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label for="faculty" class="form-label">{% trans "Faculty" %}</label>
+          <select name="faculty" id="faculty" class="form-select">
+            <option value="">{% trans "All Faculties" %}</option>
+            {% for f in faculties %}
+              <option value="{{ f }}" {% if request.GET.faculty == f %}selected{% endif %}>{{ f }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="study_programme" class="form-label">{% trans "Study Programme" %}</label>
+          <select name="study_programme" id="study_programme" class="form-select">
+            <option value="">{% trans "All Study Programmes" %}</option>
+            {% for sp in study_programmes %}
+              <option value="{{ sp }}"
+                      {% if request.GET.study_programme == sp %}selected{% endif %}>{{ sp }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="chair" class="form-label">{% trans "Chair" %}</label>
+          <select name="chair" id="chair" class="form-select">
+            <option value="">{% trans "All Chairs" %}</option>
+            {% for c in chairs %}
+              <option value="{{ c }}" {% if request.GET.chair == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="term" class="form-label">{% trans "Term" %}</label>
+          <select name="term" id="term" class="form-select">
+            <option value="">{% trans "All Terms" %}</option>
+            {% for t in terms %}
+              <option value="{{ t }}" {% if request.GET.term == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="course_name" class="form-label">{% trans "Course Name" %}</label>
+          <select name="course_name" id="course_name" class="form-select">
+            <option value="">{% trans "All Courses" %}</option>
+            {% for cn in course_names %}
+              <option value="{{ cn }}"
+                      {% if request.GET.course_name == cn %}selected{% endif %}>{{ cn }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">{% trans "Filter" %}</button>
+        </div>
+      </div>
+    </form>
+    <!-- Feedback cards section -->
+    <div class="row">
+      {% for feedback in feedbacks %}
+        <div class="col-md-4 d-flex align-items-stretch">
+          <div class="card mb-4 w-100">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">{{ feedback.task.title }}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">{{ feedback.course.chair }}</h6>
+              <h6 class="card-subtitle mb-2 text-muted">{{ feedback.course.course_name }} | {{ feedback.course.term }}</h6>
+              <!-- Truncate to first 200 chars and optionally add ellipsis if it's longer -->
+              <p class="card-text">
+                {{ feedback.task.description|slice:":200" }}
+                {% if feedback.task.description|length > 200 %}...{% endif %}
+              </p>
+              <a href="{% url 'feedback' feedback.id %}"
+                 class="btn btn-primary mt-auto">{% trans "Continue with this Task" %}</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p>{% trans "No tasks available." %}</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% include 'includes/footer.html' %}
+{% endblock %}

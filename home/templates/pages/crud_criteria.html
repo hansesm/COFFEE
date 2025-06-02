@@ -1,0 +1,241 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-md-12" style="border-right: 1px solid #ddd;">
+        <div class="d-flex justify-content-between">
+          <h2>{% trans 'Criteria' %}</h2>
+          <button id="add_criteria_btn" class="btn btn-success mb-3">{% trans 'Add New Criteria' %}</button>
+        </div>
+        <table id="criteria_table" class="display">
+          <thead>
+            <tr>
+              <th>{% trans 'Course' %}</th>
+              <th>{% trans 'Title' %}</th>
+              <th>{% trans 'Language Model' %}</th>
+              <th>{% trans 'Tags' %}</th>
+              <th>{% trans 'Active' %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for criteria in criteria_set %}
+              <tr data-id="{{ criteria.id }}"
+                  data-title="{{ criteria.title }}"
+                  data-description="{{ criteria.description }}"
+                  data-active="{{ criteria.active }}"
+                  data-prompt="{{ criteria.prompt }}"
+                  data-llm="{{ criteria.llm }}"
+                  data-sequels="{{ criteria.sequels }}"
+                  data-tag="{{ criteria.tag }}"
+                  data-course_id="{{ criteria.course.id }}"
+                  data-course_name="{{ criteria.course.course_name }}">
+                <td>{{ criteria.course.course_name }}</td>
+                <td>{{ criteria.title }}</td>
+                <td>{{ criteria.llm }}</td>
+                <td>{{ criteria.tag }}</td>
+                <td>{{ criteria.active }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade"
+         id="criteriaModal"
+         tabindex="-1"
+         aria-labelledby="modalTitle"
+         data-bs-backdrop="static"
+         aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">{% trans 'Criteria Details' %}</h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="details_form" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="criteria_id" name="criteria_id" />
+              <div class="form-group">
+                <label for="title">{% trans 'Title' %}</label>
+                <input type="text" class="form-control" id="title" name="title" required />
+              </div>
+              <div class="form-group">
+                <label for="course_id">{% trans 'Course' %}</label>
+                <select class="form-control" id="course_id" name="course_id" required>
+                  <option value="" disabled selected>{% trans "Select Course" %}</option>
+                  {% for course in course_set %}<option value="{{ course.id }}">{{ course.course_name }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="active" name="active" />
+                <label class="form-check-label" for="active">{% trans 'Active' %}</label>
+              </div>
+              <div class="form-group">
+                <label for="description">{% trans 'Criteria Description' %}</label>
+                <textarea class="form-control" rows="3" id="description" name="description"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="llm">{% trans 'Language Model' %}</label>
+                <select class="form-control" id="llm" name="llm">
+                  <option value="">{% trans 'Select Language Model' %}</option>
+                  {% for model in llm_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="prompt">{% trans 'Prompt' %}</label>
+                <textarea class="form-control" rows="5" id="prompt" name="prompt" required></textarea>
+                <!-- Explanation Below Prompt -->
+                <small class="form-text text-muted">
+                  {% trans 'Available keywords:' %}
+                  ##submission##, ##task_title##, ##task_description##, ##task_context##, ##course_context##
+                </small>
+              </div>
+              <div class="form-group">
+                <label for="sequels">{% trans 'Sequels' %}</label>
+                <textarea class="form-control" rows="3" id="sequels" name="sequels"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="tag">{% trans 'Tag' %}</label>
+                <input type="text" class="form-control" id="tag" name="tag" />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="delete_criteria_btn">{% trans 'Delete' %}</button>
+            <button type="submit" class="btn btn-primary" form="details_form">{% trans 'Save' %}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var table = $('#criteria_table').DataTable();
+
+        // Initialize modal instances
+        var criteriaModalElement = document.getElementById('criteriaModal');
+        var criteriaModal = new bootstrap.Modal(criteriaModalElement);
+
+        // Event handler for clicking on a row in the table (to edit criteria)
+        $('#criteria_table tbody').on('click', 'tr', function () {
+            var data = table.row(this).data();
+            $('#criteria_id').val($(this).data('id'));
+            $('#title').val($(this).data('title'));
+            var isActive = $(this).data('active') === 'True' || $(this).data('active') === true;
+            $('#active').prop('checked', isActive);
+            $('#description').val($(this).data('description'));
+            $('#prompt').val($(this).data('prompt'));
+            $('#sequels').val($(this).data('sequels'));
+            $('#tag').val($(this).data('tag'));
+
+            // Set the llm dropdown value
+            $('#llm').val($(this).data('llm'));
+
+            // Set the course dropdown value
+            var courseId = $(this).data('course_id');
+            $('#course_id').val(courseId);
+
+            $('#modalTitle').text('{% trans "Edit Criteria" %}');
+            criteriaModal.show();
+        });
+
+        // Event handler for clicking on 'Add New Criteria' button
+        $('#add_criteria_btn').on('click', function () {
+            // Clear the form fields
+            $('#criteria_id').val('');
+            $('#title').val('');
+            $('#active').prop('checked', false);
+            $('#description').val('');
+            $('#prompt').val('');
+            $('#sequels').val('');
+            $('#tag').val('');
+            $('#llm').val(''); 
+            $('#course_id').val('');
+
+            $('#modalTitle').text('{% trans "Add New Criteria" %}');
+            criteriaModal.show();
+        });
+
+        // Event handler for submitting the form (saving criteria)
+        $('#details_form').on('submit', function (e) {
+            e.preventDefault();
+            var criteriaData = {
+                criteria_id: $('#criteria_id').val(),
+                title: $('#title').val(),
+                active: $('#active').is(':checked') ? "true" : "false",
+                description: $('#description').val(),
+                llm: $('#llm').val(),
+                prompt: $('#prompt').val(),
+                sequels: $('#sequels').val(),
+                tag: $('#tag').val(),
+                course_id: $('#course_id').val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                request_type: 'update'
+            };
+
+            $.ajax({
+                url: "{% url 'criteria' %}",
+                method: 'POST',
+                data: criteriaData,
+                success: function (response) {
+                    if (response.success) {
+                        criteriaModal.hide();
+                        location.reload(); // Reload the page to reflect changes
+                    } else {
+                        displayAlert(response.error || '{% trans "Error saving criteria data." %}');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    displayAlert('{% trans "An error occurred:" %} ' + error);
+                }
+            });
+        });
+
+        // Event handler for deleting criteria
+        $('#delete_criteria_btn').on('click', function () {
+            var criteria_id = $('#criteria_id').val();
+            if (criteria_id) {
+                if (confirm('{% trans "Are you sure you want to delete this criteria?" %}')) {
+                    $.ajax({
+                        url: "{% url 'criteria' %}",
+                        method: 'POST',
+                        data: {
+                            criteria_id: criteria_id,
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            request_type: 'delete'
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                criteriaModal.hide();
+                                location.reload(); // Reload the page to reflect changes
+                            } else {
+                                displayAlert(response.error || '{% trans "Error deleting criteria." %}');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            displayAlert('{% trans "An error occurred:" %} ' + error);
+                        }
+                    });
+                }
+            } else {
+                displayAlert('{% trans "No criteria selected to delete." %}');
+            }
+        });
+
+        // Function to display alerts (used for error handling)
+        function displayAlert(message) {
+            alert(message);
+        }
+    });
+  </script>
+{% endblock %}

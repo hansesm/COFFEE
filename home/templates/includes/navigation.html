@@ -1,0 +1,83 @@
+{% load i18n static %}
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+  <div class="container-fluid">
+    <!-- Sidebar Minimize Button -->
+    <button class="btn btn-link me-2" type="button" id="sidebarCollapse">
+      <i class="fas fa-bars"></i>
+    </button>
+    <!-- Centered Brand Logo and Name -->
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="{% static 'img/logo.png' %}" alt="Logo" height="30" class="me-2" />
+      <span class="font-weight-bold">{% trans 'COFFEE @ Feedbackcentre' %}</span>
+    </a>
+    <!-- Navbar Toggler (for mobile view) -->
+    <button class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown"
+            aria-expanded="false"
+            aria-label="{% trans 'Toggle navigation' %}">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <!-- Navbar Links -->
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+      <ul class="navbar-nav ms-auto">
+        <!-- Language Switcher Dropdown -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle"
+             href="#"
+             id="navbarLanguageDropdown"
+             role="button"
+             data-bs-toggle="dropdown"
+             aria-expanded="false">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_language_info_list for LANGUAGES as languages %}
+            {% for lang in languages %}
+              {% if lang.code == LANGUAGE_CODE %}{{ lang.name_local }}{% endif %}
+            {% endfor %}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="navbarLanguageDropdown">
+            {% for lang in languages %}
+              <li>
+                <a class="dropdown-item"
+                   href="#"
+                   onclick="document.getElementById('language-form-{{ lang.code }}').submit();">
+                  {{ lang.name_local }}
+                </a>
+                <form id="language-form-{{ lang.code }}"
+                      action="{% url 'set_language' %}"
+                      method="post"
+                      style="display: none">
+                  {% csrf_token %}
+                  <input name="language" type="hidden" value="{{ lang.code }}" />
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
+        <!-- Authenticated User Links -->
+        {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a href="{% url 'account' %}" class="nav-link">{% trans "Hello," %} {{ request.user.username }}!</a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'logout' %}" class="nav-link">
+              <i class="fa fa-user me-1"></i>
+              {% trans 'Logout' %}
+            </a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a href="{% url 'login' %}" class="nav-link">
+              <i class="fa fa-user me-1"></i>
+              {% trans 'Login' %}
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

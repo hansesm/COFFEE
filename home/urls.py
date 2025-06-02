@@ -1,0 +1,85 @@
+from django.urls import path
+from . import views
+from .views import (
+    CrudCourseView,
+    CrudTaskView,
+    CrudCriteriaView,
+    CrudFeedbackView,
+    FeedbackListView,
+    FeedbackSessionCSVView,
+    policies,
+    save_feedback_session,
+    FetchRelatedDataView,
+    FeedbackSessionAnalysisView
+)
+from django.contrib.auth import views as auth_views
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.conf.urls import include
+from django.views.generic import TemplateView
+
+urlpatterns = [
+    path("", FeedbackListView.as_view(), name="feedback_list"),
+    path("feedback/<uuid:id>/", views.feedback, name="feedback"),
+    path("feedback/", views.feedback, name="feedback"),
+    path("newtask/", views.task, name="newtask"),
+    path(
+        "feedback_stream/<uuid:feedback_uuid>/<uuid:criteria_uuid>/",
+        views.feedback_stream,
+        name="feedback_stream",
+    ),
+    path("course/", CrudCourseView.as_view(), name="course"),
+    path("criteria/", CrudCriteriaView.as_view(), name="criteria"),
+    path("task/", views.CrudTaskView.as_view(), name="task"),
+    path(
+        "managefeedback/",
+        views.CrudFeedbackView.as_view(),
+        name="managefeedback",
+    ),
+    path("analysis/", views.FeedbackSessionAnalysisView.as_view(), name="analysis"),
+    path("analysis/download/", FeedbackSessionCSVView.as_view(), name="feedback_csv"),
+    path("accounts/login/", views.UserLoginView.as_view(), name="login"),
+    path("accounts/logout/", views.logout_view, name="logout"),
+    path("accounts/register/", views.register, name="register"),
+    path(
+        "accounts/password-change/",
+        views.UserPasswordChangeView.as_view(),
+        name="password_change",
+    ),
+    path(
+        "accounts/password-change-done/",
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name="accounts/password_change_done.html"
+        ),
+        name="password_change_done",
+    ),
+    path(
+        "accounts/password-reset/",
+        views.UserPasswordResetView.as_view(),
+        name="password_reset",
+    ),
+    path(
+        "accounts/password-reset-confirm/<uidb64>/<token>/",
+        views.UserPasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "accounts/password-reset-done/",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="accounts/password_reset_done.html"
+        ),
+        name="password_reset_done",
+    ),
+    path(
+        "accounts/password-reset-complete/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="accounts/password_reset_complete.html"
+        ),
+        name="password_reset_complete",
+    ),
+    path("i18n/", include("django.conf.urls.i18n")),
+    path("save_feedback_session/", save_feedback_session, name="save_feedback_session"),
+    path('fetch-related-data/', FetchRelatedDataView.as_view(), name='fetch_related_data'),
+    path('policies/', policies, name='policies'),
+    # Account page that shows user information
+    path('account/', TemplateView.as_view(template_name="pages/account.html"), name="account"),
+]

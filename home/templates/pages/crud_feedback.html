@@ -1,0 +1,344 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-md-12" style="border-right: 1px solid #ddd;">
+        <div class="d-flex justify-content-between">
+          <h2>{% trans "Feedbacks" %}</h2>
+          <button id="add_feedback_btn" class="btn btn-success mb-3">{% trans "Add New Feedback" %}</button>
+        </div>
+        <table id="feedback_table" class="display">
+          <thead>
+            <tr>
+              <th>{% trans "Course" %}</th>
+              <th>{% trans "Task" %}</th>
+              <th>{% trans "Active" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for feedback in feedback_list %}
+              <tr data-id="{{ feedback.id }}"
+                  data-course="{{ feedback.course.id }}"
+                  data-course-title="{{ feedback.course.course_name }}"
+                  data-task="{{ feedback.task.id }}"
+                  data-task-title="{{ feedback.task.title }}"
+                  data-active="{{ feedback.active }}"
+                  data-criteria-set="{{ feedback.criteria_set_json }}">
+                <td>{{ feedback.course }}</td>
+                <td>{{ feedback.task.title }}</td>
+                <td>{{ feedback.active }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade"
+         id="feedbackModal"
+         tabindex="-1"
+         aria-labelledby="modalTitle"
+         data-bs-backdrop="static"
+         aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">{% trans "Feedback Details" %}</h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="feedback_form" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="feedback_id" name="feedback_id" />
+              <!-- First Row -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="course" class="form-label">{% trans "Course" %}</label>
+                  <select class="form-select" id="course" name="course" required>
+                    {% for course in course_list %}<option value="{{ course.id }}">{{ course.course_name }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="task" class="form-label">{% trans "Task" %}</label>
+                  <select class="form-select" id="task" name="task" required>
+                    {% for task in task_list %}<option value="{{ task.id }}">{{ task.title }}</option>{% endfor %}
+                  </select>
+                </div>
+              </div>
+              <!-- Second Row -->
+              <div class="row align-items-end">
+                <div class="col-md-8 mb-3">
+                  <label for="criteria_selector" class="form-label">{% trans "Criteria Set" %}</label>
+                  <div class="row g-2 align-items-stretch">
+                    <div class="col">
+                      <select class="form-select" id="criteria_selector" name="criteria_selector">
+                        {% for criteria in criteria_set %}<option value="{{ criteria.id }}">{{ criteria.title }}</option>{% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <button type="button" id="add_criteria_btn" class="btn btn-primary">{% trans "Add" %}</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="active" name="active" />
+                    <label class="form-check-label" for="active">{% trans "Active" %}</label>
+                  </div>
+                </div>
+              </div>
+              <!-- Criteria Table -->
+              <div class="table-responsive">
+                <table id="criteria_table" class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>{% trans "Criteria" %}</th>
+                      <th>{% trans "Actions" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Rows will be dynamically added here -->
+                  </tbody>
+                </table>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="delete_feedback_btn">{% trans "Delete" %}</button>
+            <button type="submit" class="btn btn-primary" form="feedback_form">{% trans "Save" %}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <!-- Include Sortable.js if not already included -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  var table = $('#feedback_table').DataTable();
+  var feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+
+  // Global variables to store pre-selected task details when editing feedback
+  window.preSelectedTask = null;
+  window.preSelectedTaskTitle = null;
+
+  // Handler for editing existing feedbacks
+  $('#feedback_table tbody').on('click', 'tr', function () {
+    var feedbackId   = $(this).data('id');
+    var courseId     = $(this).data('course');
+    var courseTitle  = $(this).data('course-title'); // required in <tr>
+    var taskId       = $(this).data('task');
+    var taskTitle    = $(this).data('task-title');   // required in <tr>
+    var isActive     = $(this).data('active') === 'True' || $(this).data('active') === true;
+    var criteriaData = $(this).data('criteria-set');
+
+    // Set basic form fields
+    $('#feedback_id').val(feedbackId);
+    $('#active').prop('checked', isActive);
+
+    // Clear and re-populate the criteria table
+    $('#criteria_table tbody').empty();
+    if (Array.isArray(criteriaData)) {
+      for (var i = 0; i < criteriaData.length; i++) {
+        addCriteriaRow(criteriaData[i].criteria__id, criteriaData[i].criteria__title);
+      }
+    }
+
+    // For the course dropdown: if the current course isn’t in the list,
+    // add it with its label plus the (Inactive) annotation.
+    if ($('#course option[value="' + courseId + '"]').length === 0) {
+      $('#course').append(
+        `<option value="${courseId}">${courseTitle} (Inactive)</option>`
+      );
+    }
+
+    // Set the course and trigger change so active tasks/criteria load
+    $('#course').val(courseId).trigger('change');
+
+    // For tasks: store the pre-selected task details to be applied after AJAX loads active tasks.
+    window.preSelectedTask = taskId;
+    window.preSelectedTaskTitle = taskTitle;
+
+    $('#modalTitle').text('{% trans "Edit Feedback" %}');
+    feedbackModal.show();
+  });
+
+  // Handler for "Add New Feedback" button (new feedback always uses active items)
+  $('#add_feedback_btn').on('click', function () {
+    $('#feedback_id').val('');
+    $('#feedback_form')[0].reset();
+    $('#criteria_table tbody').empty();
+    $('#modalTitle').text('{% trans "Add New Feedback" %}');
+    // Trigger change to load active tasks/criteria.
+    $('#course').trigger('change');
+    feedbackModal.show();
+  });
+
+  // Add a criteria row via the "Add" button.
+  $('#add_criteria_btn').on('click', function () {
+    var criteriaId   = $('#criteria_selector').val();
+    var criteriaText = $('#criteria_selector option:selected').text();
+    addCriteriaRow(criteriaId, criteriaText);
+  });
+
+  // Remove a criteria row.
+  $(document).on('click', '.remove-criteria-btn', function () {
+    $(this).closest('tr').remove();
+  });
+
+  // Helper function to add a criteria row to the criteria table.
+  function addCriteriaRow(id, title) {
+    var rowHtml = `
+      <tr data-id="${id}">
+        <td>${title}</td>
+        <td>
+          <button type="button" class="btn btn-danger remove-criteria-btn">
+            {% trans "Remove" %}
+          </button>
+        </td>
+      </tr>
+    `;
+    $('#criteria_table tbody').append(rowHtml);
+  }
+
+  // Enable sorting of the criteria table rows (if needed).
+  var sortable = Sortable.create(document.querySelector('#criteria_table tbody'), {
+    animation: 150,
+    handle: 'td',
+    onEnd: function () {
+      updateRanks();
+    }
+  });
+
+  // Optional: update ranking inputs if you have them.
+  function updateRanks() {
+    $('#criteria_table tbody tr').each(function (index) {
+      $(this).find('.rank-input').val(index + 1);
+    });
+  }
+
+  // Feedback form submission (create/update).
+  $('#feedback_form').on('submit', function (e) {
+    e.preventDefault();
+
+    var criteriaSet = [];
+    $('#criteria_table tbody tr').each(function (index) {
+      var criteriaId = $(this).data('id');
+      criteriaSet.push({ id: criteriaId, rank: index + 1 });
+    });
+
+    var feedbackData = {
+      feedback_id: $('#feedback_id').val(),
+      course: $('#course').val(),
+      task: $('#task').val(),
+      active: $('#active').is(':checked') ? "true" : "false",
+      criteria_set: JSON.stringify(criteriaSet),
+      csrfmiddlewaretoken: '{{ csrf_token }}',
+      request_type: 'update'
+    };
+
+    $.ajax({
+      url: "{% url 'managefeedback' %}",
+      method: 'POST',
+      data: feedbackData,
+      success: function (response) {
+        if (response.success) {
+          feedbackModal.hide();
+          location.reload();
+        } else {
+          displayAlert(response.error || '{% trans "Error saving feedback data." %}');
+        }
+      },
+      error: function (xhr, status, error) {
+        displayAlert('{% trans "An error occurred:" %} ' + error);
+      }
+    });
+  });
+
+  // Delete feedback handler.
+  $('#delete_feedback_btn').on('click', function () {
+    var feedback_id = $('#feedback_id').val();
+    if (feedback_id) {
+      if (confirm('{% trans "Are you sure you want to delete this feedback?" %}')) {
+        $.ajax({
+          url: "{% url 'managefeedback' %}",
+          method: 'POST',
+          data: {
+            feedback_id: feedback_id,
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            request_type: 'delete'
+          },
+          success: function (response) {
+            if (response.success) {
+              feedbackModal.hide();
+              location.reload();
+            } else {
+              displayAlert(response.error || '{% trans "Error deleting feedback." %}');
+            }
+          },
+          error: function (xhr, status, error) {
+            displayAlert('{% trans "An error occurred:" %} ' + error);
+          }
+        });
+      }
+    } else {
+      displayAlert('{% trans "No feedback selected to delete." %}');
+    }
+  });
+
+  // When the course dropdown changes, fetch related active tasks and criteria.
+  $('#course').on('change', function () {
+    var courseId = $(this).val();
+
+    if (courseId) {
+      $.ajax({
+        url: "{% url 'fetch_related_data' %}",
+        method: 'GET',
+        data: { course_id: courseId },
+        success: function (response) {
+          // Populate the task dropdown with active tasks.
+          $('#task').empty();
+          response.tasks.forEach(function (task) {
+            $('#task').append(`<option value="${task.id}">${task.title}</option>`);
+          });
+
+          // If a pre-selected task exists (from editing), add it if missing.
+          if (window.preSelectedTask) {
+            if ($('#task option[value="' + window.preSelectedTask + '"]').length === 0) {
+              $('#task').append(
+                `<option value="${window.preSelectedTask}">${window.preSelectedTaskTitle} (Inactive)</option>`
+              );
+            }
+            $('#task').val(window.preSelectedTask);
+            window.preSelectedTask = null;
+            window.preSelectedTaskTitle = null;
+          }
+
+          // Populate the criteria dropdown with active criteria.
+          $('#criteria_selector').empty();
+          response.criteria.forEach(function (criteria) {
+            $('#criteria_selector').append(`<option value="${criteria.id}">${criteria.title}</option>`);
+          });
+        },
+        error: function () {
+          alert('{% trans "Error fetching related data" %}');
+        }
+      });
+    }
+  });
+
+  // Utility function to display alerts.
+  function displayAlert(message) {
+    alert(message);
+  }
+});
+  </script>
+{% endblock %}

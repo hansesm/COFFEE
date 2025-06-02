@@ -1,0 +1,30 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="row my-4">
+      <h2>Für welche Aufgabe benötigen Sie Feedback?</h2>
+      {% if feedback_set %}
+        {% for feedback in feedback_set %}
+          <div class="card mb-3">
+            <div class="card-body">
+              <h5 class="card-title">{{ feedback.task.title }}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">Kurs: {{ feedback.course }}</h6>
+              <p class="card-text">{{ feedback.task.description }}</p>
+              <a href="feedback/{{ feedback.id }}" class="btn btn-primary">Lösung eingeben</a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>Es sind noch keine Feedback-Aufgaben angelegt worden.</p>
+      {% endif %}
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+
+<!-- Specific JS goes HERE -->
+{% block scripts %}
+
+{% endblock %}

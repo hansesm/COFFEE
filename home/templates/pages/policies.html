@@ -1,0 +1,239 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- TABLE OF CONTENTS -->
+    <div>
+      <a href="#disclaimer-german">Disclaimer</a>
+      <br>
+      <a href="#usage-german">Nutzungshinweise</a>
+      <br>
+    </div>
+    <hr>
+    <!-- GERMAN DISCLAIMER -->
+    <h5 id="disclaimer-german">Disclaimer</h5>
+    <p>Stand 15.03.2025</p>
+    <h5>Beschreibung der KI-Anwendung</h5>
+    <p>
+      Die Anwendung COFFEE (corrective formative feedback) wurde dazu konzipiert, Studierenden ein korrektives formatives Feedback direkt auf Lösungsversuche zu eingepflegten Freitextaufgaben bereitzustellen. Eine Bewertung von Prüfungsleistungen mit COFFEE gehört ausdrücklich nicht zum Zweck der Anwendung.
+      Bitte beachten Sie, dass die Antworten und Informationen durch generative KI bereitgestellt werden. Trotz sorgfältiger Qualitätskontrolle durch Lehrende können Antworten fehlerhaft, unvollständig oder ungenau sein.
+    </p>
+    <h5>Nutzungsausschluss: Bewertung akademischer Leistungen in Prüfungen</h5>
+    <p>
+      COFFEE stellt Feedback zu formativen Übungsaufgaben im Hochschulkontext bereit. Durch die Feedbacks von COFFEE können keine Rückschlüsse auf aktuelle Bewertungen im Prüfungskontext von Studierenden getroffen werden. Ebenso dürfen Lehrende COFFEE nicht ungeprüft für die Bewertung von Prüfungsleistungen verwenden. Die durch die KI-Anwendung bereitgestellten Informationen stellen keine Bewertung dar. Für spezifische und fachliche Informationen zu Feedback-Inhalten kontaktieren Sie bitte die Lehrenden des Kurses.
+    </p>
+    <h5>Verfügbarkeit &amp; Datenspeicherung</h5>
+    <p>
+      Bei COFFEE handelt es sich um einen Forschungsprototypen. Es besteht daher kein Anspruch auf eine unmittelbare oder dauerhafte Verfügbarkeit der Anwendung. Da in die KI-Anwendung keine personenbezogenen Daten eingegeben werden sollen, können diese nicht zurückverfolgt und somit auch nicht an die Nutzenden zurückgegeben werden. Ebenso können Nutzende eingegebene Lösungen nicht zurückfordern. Die Nutzung der KI-Anwendung erfolgt durch die Nutzer freiwillig.
+    </p>
+    <h5>Änderungen und Updates</h5>
+    <p>
+      Wir behalten uns das Recht vor, diesen Disclaimer und die Nutzungshinweise aus aktuellem Anlass jederzeit zu aktualisieren. Bitte überprüfen Sie diese Seite vor jeder Nutzung, um auf dem neuesten Stand zu bleiben. Ihre fortgesetzte Nutzung gilt als Zustimmung zu den aktualisierten Bedingungen.
+    </p>
+    <h5>Datenschutz</h5>
+    <p>
+      Der Schutz Ihrer Daten ist uns wichtig. Bitte beachten Sie unsere Nutzungshinweise, um zu erfahren, wie wir Ihre persönlichen Daten verarbeiten und schützen. Ihre Interaktionen mit COFFEE werden ausschließlich in anonymer Form zur Verbesserung des Dienstes aufgezeichnet und vertraulich behandelt.
+    </p>
+    <h5>Nutzungshinweise</h5>
+    <p>Die Nutzungshinweise von COFFEE habe ich zur Kenntnis genommen.</p>
+    <hr>
+    <!-- GERMAN TERMS OF USE -->
+    <h5 id="usage-german">Nutzungshinweise</h5>
+    <p>Stand 15.03.2025</p>
+    <h5>1. Technische Angaben</h5>
+    <p>
+      COFFEE (corrective formative feedback) ist eine Anwendung zur Unterstützung der
+      Lehre. COFFEE gehört zur Anwendungsgruppe der KI-Anwendungen.
+    </p>
+    <p>
+      In COFFEE werden modul- oder kursbezogene Feedbacks zu Freitextantworten bereitgestellt.
+      Die Lehre der FernUniversität findet auf der Moodle-Instanz https://moodle.fernuni-hagen.de statt. COFFEE kann über einen Link in eine Moodle Lernumgebung eingebettet werden.
+      Alle Anwendungen, Datenbanken und Sprachmodelle (LLMs), die COFFEE nutzt werden in einer sicheren technischen Umgebung auf Servern der FernUniversität in Hagen im Rechenzentrum des ZDI auf dem Campus in Hagen betrieben.
+      COFFEE ist eine serverbasierte Anwendung, die die Generierung von personalisierten Feedbacks ermöglicht. Dazu setzt sie leistungsstarke Open Source Large Language Models ein und greift dafür auf die von FLEXI (FernUni LLM Experimental Infrastructure) bereitgestellten Modelle zurück. Die Systemumgebung beinhaltet jeweils eigens für COFFEE eingerichtete Webserver und Datenbanken.
+      Zugriff auf diese Server haben ausschließlich die Systemadministrierenden im ZDI. Für die Nutzenden ohne Admin-Rechte sind die Daten nur webbasiert über die Funktionen in COFFEE zugänglich.
+    </p>
+    <h5>2. Zugang/Anmeldung</h5>
+    <p>
+      Für den allgemeinen Zugang zu COFFEE ist eine Basisauthentifizierung notwendig.
+      Der Basiszugriff ermöglicht lediglich den grundsätzlichen Zugang zur Aufgabenauswahl mit Feedbackgenerierung zu verfügbaren Aufgaben.
+      Die Zugriffsrechte zu den einzelnen Kursen werden manuell als Gruppenlogin vergeben. Betreuer*innen eines Kurses können sich unter Nutzung von Gruppenaccounts am System anmelden.
+      Im Bereich „Verwaltung“ können Sie entsprechende Module, Aufgaben, Kriterien und Feedbacks anlegen, bearbeiten und löschen.
+      Der gesamte „Verwaltungsbereich“ ist durch ein Rollenkonzept mit Berechtigungen hinterlegt, sodass Betreuer*innen nur auf Ihre eigenen Daten zugreifen können.
+    </p>
+    <h5>3. Nutzung der Daten und Datenschutz</h5>
+    <p>
+      Die FernUniversität in Hagen verarbeitet Daten auf Grundlage der DSGVO, des DSG des Bundes und des DSG NRW. Weitere Details zu diesen Daten und der rechtlichen Grundlage finden Sie in der Datenschutzerklärung der FernUniversität in Hagen.
+      Nutzer:innen sollten keine personenbezogenen Daten in Lösungen oder über andere Freitextfelder in das System eingegeben.
+    </p>
+    <h5>3.1 Authentifizierung</h5>
+    <p>
+      Durch die Basisauthentifizierung werden keine personenbezogenen Daten gespeichert.
+      Durch den Login über einen Gruppenaccount für Betreuer*innen können unter Umständen Einzelpersonen identifiziert werden.
+      Der Login von Administratoren enthält den Nachnamen als personenbezogene Information.
+    </p>
+    <h5>3.2 Sonstige Daten</h5>
+    <p>
+      Alle Beiträge, Aufgabenlösungen oder Aktionen, die im Verlauf der Nutzung von COFFEE
+      eingestellt werden, werden in der Form gespeichert, dass nicht nachvollziehbar ist,
+      wer diese Beiträge bzw. Aufgabenlösungen verfasst bzw. ausgeführt hat. Es werden die
+      Eingaben von Lösungen und die vom System erzeugten Feedbacktexte gespeichert. Dies
+      beinhaltet den Kurs, die Aufgabe, die Aufgabenlösung, das generierte Feedback sowie
+      der genaue Zeitpunkt, an dem die Daten eingegeben und die Feedbacks erstellt wurden.
+    </p>
+    <h5>3.3 Sichtbarkeit der Daten</h5>
+    <p>
+      Für Administrierende sind die Logdaten der Webserver sichtbar. Darüber hinaus ist es Administrierenden auch über den direkten Zugriff auf die Datenbank nicht möglich, auch nicht für den Fall von Missbrauch oder bei technischen Problemen nachzuvollziehen, von welchen Nutzenden bestimmte Beiträge oder Aktivitäten eingestellt bzw. ausgeführt wurden.
+    </p>
+    <h5>3.4 Nutzung und Veröffentlichung der Daten</h5>
+    <p>
+      Die in COFFEE gespeicherten Daten können zu Forschungszwecken genutzt und dafür an Forschende an der FernUniversität in Hagen weitergegeben werden. Anonymisierte Daten können im wissenschaftlichen Kontext veröffentlicht werden.
+    </p>
+    <h5>4. Die Rollen und Rechte</h5>
+    <p>
+      COFFEE besitzt ein differenziertes Rollen- und Rechtekonzept. Aus einem Katalog von Rechten kann für jede Rolle bestimmt werden, ob ein Recht gewährt wird oder nicht. Rollen werden kontextabhängig wirksam: innerhalb der gesamten COFFEE Anwendung, innerhalb eines in COFFEE angelegten Kurses oder nur für eine Aktivität.
+    </p>
+    <h5>4.1 Rollen von Nutzenden und deren Rechte</h5>
+    <p>
+      In COFFEE können Nutzende folgende grundlegende Rollen innehaben. Die einzelnen Rollen mit aufsteigendem Rechteumfang:
+    </p>
+    <p>
+      1. Teilnehmer*in
+      <br>
+      2. Betreuer*in ohne Bearbeitungsrecht
+      <br>
+      3. Betreuer*in
+      <br>
+      4. Administrator*in
+      <br>
+      Weitere Erläuterungen und Details zu den einzelnen Rollen finden sich in der Anlage
+      dieses Dokumentes.
+    </p>
+    <h5>5. Kursinhalte und Verantwortlichkeit</h5>
+    <p>
+      Der jeweilige COFFEE-Kurs sowie sämtliche dort zugängliche Dienste und Daten dürfen nur für Lehr-/Lern-, Forschungszwecke ohne finanzielle, private, religiöse oder politische Interessen oder Absichten genutzt werden.
+      In der Moodle-Instanz veröffentlichte, urheberrechtlich geschützte Inhalte dürfen ohne ausdrückliche Genehmigung der jeweiligen Urheber*innen weder weitergegeben noch an anderer Stelle veröffentlicht oder anderweitig verwendet werden. In der COFFEE-Anwendung veröffentlichte Lehrmaterialien, insbesondere Skripte, Lösungsskizzen und Studientexte, dürfen nur durch eingeschriebene Studierende zu persönlichen Lernzwecken genutzt werden. Ausdrücklich untersagt ist die Nutzung zur Erstellung kommerzieller Angebote sowie die Weitergabe von Lehrmaterialien an Dritte. Vor dem Einstellen in Cloud-Systeme sollten Sie in Ihrem eigenen Interesse die jeweiligen Nutzungshinweise insbesondere daraufhin überprüfen, was der Cloud-Anbieter mit den hochgeladenen Daten unternehmen darf, um einen etwaigen Rechtsverstoß zu vermeiden. Die FernUniversität bedient sich im Falle der Kenntnis von Urheberrechtsverletzungen sowohl zivil- als auch strafrechtlicher Instrumente, um ihre Rechte geltend zu machen.
+      Betreuende eines Kurses in COFFEE sind verantwortlich für das dortige Lehrangebot. Sie führen in der Lernumgebung die Aufsicht. Zur Ausführung ihrer Aufsichtspflichten haben Betreuende in ihrer Lernumgebung das (virtuelle) Hausrecht inne. Zur Ausübung dieses Hausrechts können sie ihrer Lernumgebung Hinweis- und Nutzungsregeln voranstellen, die die Grundsätze des Verhaltens innerhalb der COFFEE Anwendung regeln, deren Teilnehmende zur Einhaltung der o.g. Vorgaben anhalten und bei Bedarf Sanktionen vorsehen. Für die Meldung von rechtsverletzenden Inhalten sind die Betreuenden erste Anlaufstelle. Bei wiederholten Verstößen kann die aktive Teilnahme an COFFEE unterbunden oder der Zugriff sogar komplett untersagt werden.
+    </p>
+    <h5>5.1 Haftung der FernUniversität</h5>
+    <p>
+      Als Dienstanbieterin ist die FernUniversität für eigene Informationen verantwortlich, die sie zur Nutzung bereithält. Es besteht jedoch keine Verantwortung für die von Studierenden eingestellten Informationen oder für die von anderen Anbietenden bereit gestellten Inhalte, sowie Inhalte auf, die mittels Hyperlinks verwiesen wird. §7 Abs. 1 Digitale Dienste Gesetz (DDG) mit Verweis auf die Art. 4 – 8 der EU-Verordnung zu Digitalen Diensten (VO EU 2022/2065).
+    </p>
+    <h5>5.2 Löschfristen</h5>
+    <p>
+      Die Feedbackdokumentationen bleiben angelehnt an den Rektoratsbeschluss vom 30.06.2020 fünf Semester lang erhalten. Eine darüberhinausgehende Archivierung der Daten erfolgt nicht.
+    </p>
+    <h5>6. Weitere Informationen</h5>
+    <p>
+      Technische Hilfestellung bietet der Helpdesk des ZDI, Tel. 02331-987 4444 bzw.
+      E-Mail <a href="mailto:helpdesk@fernuni-hagen.de">helpdesk@fernuni-hagen.de</a>.
+    </p>
+    <p>
+      <strong>Anlage - Erläuterungen zu den verschiedenen Rollen, die Nutzende haben können:</strong>
+    </p>
+    <p>
+      <strong>1. Teilnehmer*in mit Basisauthentifizierung</strong>
+      <br>
+      Die Rolle "Teilnehmer*in" wird Personen zugewiesen, die sich mit der
+      Basisauthentifizierung in COFFEE eingeloggt hat. Personen in dieser Rolle können
+      je nach Lehrszenario folgende Daten einsehen:
+    </p>
+    <ul>
+      <li>Aufgabenübersicht</li>
+      <li>Aktive Aufgaben aller Kurse</li>
+      <li>Feedbackgenerieren-Seite zu jeder aktiven Aufgabe</li>
+    </ul>
+    <p>
+      <strong>2. Betreuer*in und Betreuer*in ohne Bearbeitungsrechte</strong>
+      <br>
+      Die Rolle "Betreuer*in ohne Bearbeitungsrechte" wird durch eine Authentifizierung
+      über einen Gruppenaccount in COFFEE eingeloggt.
+      <br>
+      Personen in diesen Rollen können folgende Daten einsehen:
+    </p>
+    <ul>
+      <li>Aufgabenübersicht</li>
+      <li>Aktive Aufgaben aller Kurse</li>
+      <li>Feedbackgenerieren-Seite zu jeder aktiven Aufgabe</li>
+    </ul>
+    <p>Im Bereich Administration kann ein*e "Betreuer*in ohne Bearbeitungsrechte":</p>
+    <ul>
+      <li>Aufgabenübersicht zu allen dem Kurs zugeordneten</li>
+      <li>Aktive Aufgaben aller Kurse</li>
+      <li>Feedbackgenerieren-Seite zu jeder aktiven Aufgabe</li>
+    </ul>
+    <p>
+      Im Bereich Administration kann ein*e "Betreuer*in ohne Bearbeitungsrechte" alle
+      verfügbaren Eingabemasken und darin gespeicherte Texte lesen, aber nicht nach einer
+      Bearbeitung speichern.
+    </p>
+    <p>
+      <strong>3. Betreuer*in und Betreuer*in mit Bearbeitungsrechten</strong>
+      <br>
+      Die Rolle "Betreuer*in mit Bearbeitungsrechten" wird durch eine Authentifizierung
+      über einen Gruppenaccount in COFFEE eingeloggt.
+      <br>
+      Personen in diesen Rollen können folgende Daten einsehen:
+    </p>
+    <ul>
+      <li>Aufgabenübersicht</li>
+      <li>Aktive Aufgaben aller Kurse</li>
+      <li>Feedbackgenerieren-Seite zu jeder aktiven Aufgabe</li>
+    </ul>
+    <p>Im Bereich Administration kann ein*e "Betreuer*in mit Bearbeitungsrechten":</p>
+    <ul>
+      <li>Aufgabenübersicht zu allen dem Kurs zugeordneten</li>
+      <li>Aktive Aufgaben aller Kurse</li>
+      <li>Feedbackgenerieren-Seite zu jeder aktiven Aufgabe</li>
+      <li>
+        in einen vom Manager zuvor angelegten Kurs das Kursmenü öffnen und die verfügbaren
+        Felder anpassen und speichern.
+      </li>
+      <li>
+        Aufgaben für einen Kurs neu anlegen oder vorhandene Aufgaben bearbeiten und die
+        möglichen Felder anpassen, speichern oder löschen.
+      </li>
+      <li>
+        Kriterien für einen Kurs neu anlegen oder vorhandene oder importierte Kriterien
+        bearbeiten und die möglichen Felder anpassen und speichern.
+      </li>
+      <li>
+        Für einen bestehenden Kurs Aufgaben und Kriterien zusammen anlegen oder vorhandene
+        Aufgaben in Kombination mit der Auswahl und Reihenfolge der Kriterien bearbeiten
+        und die möglichen Felder anpassen und speichern.
+      </li>
+    </ul>
+    <p>
+      <strong>4. Administrator*in</strong>
+      <br>
+      Die Rolle "Administrator*in" wird ausschließlich an Beschäftigte aus dem Projekt
+      IMPACT und an Mitarbeiter*innen, die mit der Administration von COFFEE an der
+      FernUniversität betraut sind, vergeben. Personen mit dieser Rolle sehen prinzipiell
+      alle Daten inklusive der Nutzungsdaten und Webserver-Protokolldaten. Die Einsicht
+      erfolgt ausschließlich im Rahmen der Dienstaufgaben und im Bedarfsfall. Die Personen,
+      denen diese Rolle zugewiesen wird, sind auf Geheimhaltung verpflichtet.
+    </p>
+    <hr>
+    {% include 'includes/footer.html' %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <!-- Simple JS snippet to offset scroll so headings don't jump too high -->
+  <script>
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        // Adjust this offset as needed
+        const offset = 90;
+        const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    });
+  });
+  </script>
+{% endblock %}
