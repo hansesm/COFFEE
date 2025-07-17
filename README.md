@@ -1,4 +1,4 @@
-# COFFEE - Course-Oriented Feedback System
+# COFFEE - Corrective Formative Feedback
 
 COFFEE is a Django-based web application designed for educational institutions to provide AI-powered feedback on student submissions. The system enables instructors to create courses, tasks, and evaluation criteria, while students can submit their work and receive automated feedback powered by Large Language Models (LLMs).
 

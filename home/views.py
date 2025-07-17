@@ -1,7 +1,9 @@
+import csv
 import json
 import logging
 
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.auth import logout
 from django.contrib.auth.models import Group
 from django.contrib.auth.views import (
@@ -10,7 +12,7 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView,
     PasswordChangeView,
 )
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
@@ -175,56 +177,77 @@ def feedback_stream(request, feedback_uuid, criteria_uuid):
 
 class FeedbackListView(View):
     def get(self, request, *args, **kwargs):
-    
-        feedbacks = Feedback.objects.filter(active=True).select_related("course", "task").order_by("course", "task")
+        # Single optimized query with select_related
+        feedbacks = Feedback.objects.filter(active=True).select_related(
+            "course", "task"
+        ).order_by("course", "task")
 
-        # Collect filter values
-        faculty = request.GET.get("faculty", "")
-        study_programme = request.GET.get("study_programme", "")
-        chair = request.GET.get("chair", "")
-        term = request.GET.get("term", "")
-        course_name = request.GET.get("course_name", "")
-
-        # Build a dictionary of filters (only add keys if non-empty)
+        # Collect filter values efficiently
         filters = {}
-        if faculty:
-            filters["course__faculty"] = faculty
-        if study_programme:
-            filters["course__study_programme"] = study_programme
-        if chair:
-            filters["course__chair"] = chair
-        if term:
-            filters["course__term"] = term
-        if course_name:
-            filters["course__course_name"] = course_name
+        for field, param in [
+            ("course__faculty", "faculty"),
+            ("course__study_programme", "study_programme"),
+            ("course__chair", "chair"),
+            ("course__term", "term"),
+            ("course__course_name", "course_name"),
+        ]:
+            value = request.GET.get(param, "")
+            if value:
+                filters[field] = value
 
         # Apply filters if any were provided
         if filters:
             feedbacks = feedbacks.filter(**filters)
 
-        # Define a base queryset for *all* Courses (excluding placeholders)
-        base_course_qs = Course.objects.exclude(faculty__startswith="#") \
-                                       .exclude(study_programme__startswith="#") \
-                                       .exclude(chair__startswith="#") \
-                                       .exclude(term__startswith="#") \
-                                       .exclude(course_name__startswith="#")
-
-        faculties = base_course_qs.values_list("faculty", flat=True).distinct().order_by("faculty")
-        study_programmes = base_course_qs.values_list("study_programme", flat=True).distinct().order_by("study_programme")
-        chairs = base_course_qs.values_list("chair", flat=True).distinct().order_by("chair")
-        terms = base_course_qs.values_list("term", flat=True).distinct().order_by("term")
-        course_names = base_course_qs.values_list("course_name", flat=True).distinct().order_by("course_name")
+        # Get filter options using cached approach
+        filter_options = self.get_filter_options()
 
         context = {
             "feedbacks": feedbacks,
-            "faculties": faculties,
-            "study_programmes": study_programmes,
-            "chairs": chairs,
-            "terms": terms,
-            "course_names": course_names,
-            "selected_term": term,
+            "faculties": filter_options['faculties'],
+            "study_programmes": filter_options['study_programmes'],
+            "chairs": filter_options['chairs'],
+            "terms": filter_options['terms'],
+            "course_names": filter_options['course_names'],
+            "selected_term": request.GET.get("term", ""),
         }
         return render(request, "pages/feedback_list.html", context)
+
+    def get_filter_options(self):
+        """Get filter options with caching for better performance"""
+        from django.core.cache import cache
+        from django.db.models import Q
+        
+        cache_key = 'course_filter_options'
+        options = cache.get(cache_key)
+        
+        if options is None:
+            # Single query to get all unique values
+            course_fields = Course.objects.exclude(
+                Q(faculty__startswith="#") | Q(study_programme__startswith="#") | 
+                Q(chair__startswith="#") | Q(term__startswith="#") | 
+                Q(course_name__startswith="#")
+            ).values('faculty', 'study_programme', 'chair', 'term', 'course_name').distinct()
+            
+            # Extract unique values efficiently
+            faculties = sorted(set(item['faculty'] for item in course_fields))
+            study_programmes = sorted(set(item['study_programme'] for item in course_fields))
+            chairs = sorted(set(item['chair'] for item in course_fields))
+            terms = sorted(set(item['term'] for item in course_fields))
+            course_names = sorted(set(item['course_name'] for item in course_fields))
+            
+            options = {
+                'faculties': faculties,
+                'study_programmes': study_programmes,
+                'chairs': chairs,
+                'terms': terms,
+                'course_names': course_names,
+            }
+            
+            # Cache for 5 minutes
+            cache.set(cache_key, options, 300)
+        
+        return options
 
 
 # -------------------------------------------------------------------------
@@ -233,24 +256,28 @@ class FeedbackListView(View):
 
 class CrudFeedbackView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Show only feedback the user can view
+        # Show only feedback the user can view (either through viewing_groups OR editing_groups)
         feedback_list = Feedback.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
-        ).distinct().order_by("task")
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all())
+        ).select_related('course', 'task').distinct().order_by("task")
 
         course_list = Course.objects.filter(
-            viewing_groups__in=request.user.groups.all()
-        ).distinct()
+            Q(viewing_groups__in=request.user.groups.all()) |
+            Q(editing_groups__in=request.user.groups.all())
+        ).prefetch_related('viewing_groups').distinct()
 
         task_list = Task.objects.filter(
-            course__viewing_groups__in=request.user.groups.all(),
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all()),
             active=True
-        ).distinct()
+        ).select_related('course').distinct()
 
         criteria_set = Criteria.objects.filter(
-            course__viewing_groups__in=request.user.groups.all(),
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all()),
             active=True
-        ).distinct()
+        ).select_related('course').distinct()
 
         # Add a helper JSON field for each feedback’s criteria
         for fdb in feedback_list:
@@ -345,9 +372,10 @@ def course(request):
 
 class CrudCourseView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Show courses the user can *at least* view
+        # Show courses the user can *at least* view (either through viewing_groups OR editing_groups)
         course_qs = Course.objects.filter(
-            viewing_groups__in=request.user.groups.all()
+            Q(viewing_groups__in=request.user.groups.all()) |
+            Q(editing_groups__in=request.user.groups.all())
         ).distinct()
 
         context = {
@@ -437,14 +465,16 @@ def task(request):
 
 class CrudTaskView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Show only tasks for courses the user can view
+        # Show only tasks for courses the user can view (either through viewing_groups OR editing_groups)
         task_qs = Task.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all())
         ).distinct()
 
         # Also only show courses they can view in the dropdown
         course_qs = Course.objects.filter(
-            viewing_groups__in=request.user.groups.all()
+            Q(viewing_groups__in=request.user.groups.all()) |
+            Q(editing_groups__in=request.user.groups.all())
         ).distinct()
 
         context = {
@@ -518,14 +548,16 @@ class CrudTaskView(ManagerRequiredMixin, View):
 
 class CrudCriteriaView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Show criteria for courses the user can view
+        # Show criteria for courses the user can view (either through viewing_groups OR editing_groups)
         criteria_set = Criteria.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all())
         ).distinct()
 
         # Also only show courses user can view
         course_set = Course.objects.filter(
-            viewing_groups__in=request.user.groups.all()
+            Q(viewing_groups__in=request.user.groups.all()) |
+            Q(editing_groups__in=request.user.groups.all())
         ).distinct()
 
         llm_models = list_models()  # returns a list of available LLM model names
@@ -697,18 +729,12 @@ def save_feedback_session(request):
 # Analysis for FeedbackSessions
 # -------------------------------------------------------------------------
 
-import json
-from django.core.serializers.json import DjangoJSONEncoder
-from django.shortcuts import render
-from django.views import View
-from .models import FeedbackSession
-from .mixins import ManagerRequiredMixin
-
 class FeedbackSessionAnalysisView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Filter sessions by course viewing permission
+        # Filter sessions by course viewing permission (either through viewing_groups OR editing_groups)
         sessions = FeedbackSession.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all())
         ).order_by('-timestamp').distinct()
         
         session_data = []
@@ -734,49 +760,13 @@ class FeedbackSessionAnalysisView(ManagerRequiredMixin, View):
         return render(request, "pages/analysis.html", {"feedbacksession_list": session_data})
 
 
-import json
-import csv
-from django.core.serializers.json import DjangoJSONEncoder
-from django.shortcuts import render
-from django.views import View
-from .models import FeedbackSession
-from .mixins import ManagerRequiredMixin
-
-class FeedbackSessionAnalysisView(ManagerRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        # Filter sessions by course viewing permission
-        sessions = FeedbackSession.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
-        ).order_by('-timestamp').distinct()
-        
-        session_data = []
-        for session in sessions:
-            # Ensure feedback_data is a dictionary (fallback to empty dict if None)
-            feedback = session.feedback_data or {}
-            # Extract only the "criteria" part from the feedback data
-            criteria_data = {"criteria": feedback.get("criteria", [])}
-            # Convert criteria data to JSON string (preserving special characters)
-            criteria_json = json.dumps(criteria_data, cls=DjangoJSONEncoder, ensure_ascii=False)
-            
-            session_data.append({
-                "id": str(session.id),
-                "timestamp": session.timestamp.strftime("%d.%m.%Y %H:%M:%S"),
-                "staff": session.staff_user or "anonymous",
-                "submission": session.submission or "",
-                "nps": session.nps_score or "",
-                "course": session.course.course_name if session.course else "N/A",
-                "task": session.feedback.task.title if session.feedback and session.feedback.task else "N/A",
-                "criteria_json": criteria_json,
-            })
-        
-        return render(request, "pages/analysis.html", {"feedbacksession_list": session_data})
-    
 class FeedbackSessionCSVView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Filter sessions by course viewing permission
+        # Filter sessions by course viewing permission with optimized query (either through viewing_groups OR editing_groups)
         sessions = FeedbackSession.objects.filter(
-            course__viewing_groups__in=request.user.groups.all()
-        ).order_by('-timestamp').distinct()
+            Q(course__viewing_groups__in=request.user.groups.all()) |
+            Q(course__editing_groups__in=request.user.groups.all())
+        ).select_related('course', 'feedback', 'feedback__task').order_by('-timestamp').distinct()
         
         # Prepare CSV response
         response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -789,7 +779,7 @@ class FeedbackSessionCSVView(ManagerRequiredMixin, View):
             'Staff', 'Submission', 'NPS Score', 'Feedback Data'
         ])
         
-        # Write a row for each session
+        # Write a row for each session (no N+1 queries due to select_related)
         for fs in sessions:
             raw_data = fs.feedback_data or {}
             data_string = json.dumps(raw_data, cls=DjangoJSONEncoder, ensure_ascii=False)
