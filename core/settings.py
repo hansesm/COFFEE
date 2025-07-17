@@ -25,12 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
-    SECRET_KEY = "".join(random.choice(string.ascii_lowercase) for i in range(32))
+    SECRET_KEY = "".join(random.choice(string.ascii_lowercase) for _ in range(32))
 
 # Check for Debug-Var
-DEBUG = os.environ.get("DEBUG")
-if not DEBUG:
-    DEBUG = "False"
+DEBUG = os.environ.get("DEBUG", "False")
 
 from django.utils.translation import gettext_lazy as _
 
@@ -54,28 +52,17 @@ LOCALE_PATHS = [
 # Set the default language
 LANGUAGE_CODE = "en"
 
-ALLOWED_HOSTS = [
-    "https://feeedback-impact.fernuni-hagen.de",
-    "https://coffee.fernuni-hagen.de",
-    "http://localhost",
-    "https://localhost",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-    "127.0.0.1",
-    "feedback-impact.fernuni-hagen.de",
-    "coffee.fernuni-hagen.de",
-    "localhost",
-    "localhost:8000",
-]
+ALLOWED_HOSTS_ENV = os.getenv("ALLOWED_HOSTS")
+if ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_ENV.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://feedback-impact.fernuni-hagen.de",
-    "https://coffee.fernuni-hagen.de",
-    "http://localhost",
-    "https://localhost",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-]
+CSRF_TRUSTED_ORIGINS_ENV = os.getenv("CSRF_TRUSTED_ORIGINS")
+if CSRF_TRUSTED_ORIGINS_ENV:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in CSRF_TRUSTED_ORIGINS_ENV.split(",") if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = []
 
 # Application definition
 
@@ -208,12 +195,13 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 1209600  # Two weeks
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True").lower() == "true"
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True").lower() == "true"
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
 
 # Graphviz Configuration
 GRAPH_MODELS = {
-  'app_labels': ["home", "auth"],
+    'app_labels': ['home', 'auth'],
 }
+

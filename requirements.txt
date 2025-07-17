@@ -1,8 +1,9 @@
-django
-gunicorn
-python-dotenv
-whitenoise
-psycopg2-binary
-ollama
-requests
-django-extensions
+Django==5.2
+gunicorn==21.2.0
+python-dotenv==1.0.0
+whitenoise==6.5.0
+psycopg2-binary==2.9.9
+ollama==0.1.7
+requests==2.31.0
+django-extensions==3.2.3
+

@@ -9,8 +9,6 @@ build/
 env
 /staticfiles/
 
-#src
+# src
 *.sqlite*
 .env
-*.yaml
-*.yml

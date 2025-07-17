@@ -1,18 +1,23 @@
 import logging
+import os
+from dotenv import load_dotenv
 from ollama import Client
 
-# Define your default configuration once.
+load_dotenv()
+
+PRIMARY_HOST = os.getenv("PRIMARY_HOST", "")
 PRIMARY_DEFAULT_HEADER = {
-    "Authorization": "Bearer sk-bcfd247473744ea1a2e2fa38b1ec9254",
-    "Content-Type": "application/json"
+    "Authorization": f"Bearer {os.getenv('PRIMARY_API_TOKEN', '')}",
+    "Content-Type": "application/json",
 }
-PRIMARY_HOST = "https://chat-impact.fernuni-hagen.de/ollama"   # Replace with your ollama host
-FALLBACK_HOST = "http://catalpa-llm.fernuni-hagen.de:11434/"  # Replace with your fallback host
+
+FALLBACK_HOST = os.getenv("FALLBACK_HOST", "")
 FALLBACK_DEFAULT_HEADER = {
-    "Authorization": "Bearer sk-7613be4746b7401a9249075429eba771",
-    "Content-Type": "application/json"
+    "Authorization": f"Bearer {os.getenv('FALLBACK_API_TOKEN', '')}",
+    "Content-Type": "application/json",
 }
-VERIFY_SSL = True  # Disables SSL certificate verification 
+
+VERIFY_SSL = os.getenv("VERIFY_SSL", "True").lower() == "true"
 
 def get_client():
     """
@@ -85,4 +90,3 @@ def list_models():
     except Exception as e:
         logging.error("Error during listing models: %s", e)
         return []
-

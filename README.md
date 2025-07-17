@@ -1,48 +1,33 @@
-# Build the Application
+# COFFEE
 
-# docker build -t fb_coffee .
-# docker build -t ghcr.io/hansesm/fb_coffee:latest -t ghcr.io/hansesm/fb_coffee:v2.5 .
-docker buildx build --platform linux/amd64,linux/arm64 --tag ghcr.io/hansesm/fb_coffee:latest --tag ghcr.io/hansesm/fb_coffee:v2.7 --push .
+This is a Django-based feedback application. The project is configured using environment variables loaded from a `.env` file. A sample configuration is provided in `.env.example`.
 
+## Development
 
-# docker build --no-cache -t fb_coffee .
-docker push --all-tags ghcr.io/hansesm/fb_coffee
+1. Create a copy of `.env.example` named `.env` and adjust the values for your environment.
+2. Build and start the stack using Docker Compose:
 
-# docker pull ghcr.io/hansesm/fb_coffee:latest
-# Deploy the Application
+```bash
+docker-compose up --build
+```
 
-k delete -f deployment-app.yaml
-k create -f deployment-app.yaml
+The application will be available at `http://localhost:8000`.
 
-python manage.py makemigrations
-python manage.py migrate
+## Running Tests
 
-python manage.py create_users_and_groups
+Install the dependencies and run the Django test suite:
 
-## Translations ## 
-python manage.py makemessages -l de 
-python manage.py makemessages -l en
-python manage.py compilemessages
+```bash
+pip install -r requirements.txt
+python manage.py test
+```
 
+## Deployment
 
-# Podman
-sudo podman play kube --replace podman-deployment.yaml
-sudo podman exec -it feedback-app-pod-feedback-app /bin/bash
+A production image can be built using the provided `Dockerfile`:
 
+```bash
+docker build -t coffee-app:latest .
+```
 
-# Podman autostart
-
-sudo podman generate systemd --name feedback-app-pod --files
-
-sudo mv pod-feedback-app-pod.service /etc/systemd/system/
-
-sudo systemctl daemon-reload
-
-sudo systemctl enable pod-feedback-app-pod
-
-sudo systemctl start pod-feedback-app-pod
-
-systemctl status pod-feedback-app-pod
-
-# venv
-source venv/bin/activate
+Environment variables should be supplied via the `.env` file or your orchestration platform.
