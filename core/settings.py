@@ -66,6 +66,8 @@ ALLOWED_HOSTS = [
     "coffee.fernuni-hagen.de",
     "localhost",
     "localhost:8000",
+    "localhost:8001",
+    "testserver",  # For Django tests
 ]
 
 CSRF_TRUSTED_ORIGINS = [

@@ -1,4 +1,5 @@
 {% extends 'layouts/base.html' %}
+{% load static i18n %}
 {% block content %}
   {% include 'includes/navigation.html' %}
   <main class="main-content mt-0">
@@ -65,7 +66,7 @@
       </div>
     </section>
   </main>
-  {% include 'includes/footer-fullscreen.html' %}
+  {% include 'includes/footer.html' %}
 {% endblock %}
 {% block extrascript %}
   <script type="application/javascript">
@@ -88,7 +89,7 @@
 
         {% if form.non_field_errors %}
             {% for error in form.non_field_errors %}
-                notification.warning("{{ error|clean_text }}", 'top', 'right');
+                notification.warning("{{ error|escape }}", 'top', 'right');
             {% endfor %}
         {% endif %}
   </script>
