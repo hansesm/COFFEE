@@ -217,3 +217,13 @@ SESSION_COOKIE_SAMESITE = 'None'
 GRAPH_MODELS = {
   'app_labels': ["home", "auth"],
 }
+
+# Ollama API Configuration
+OLLAMA_PRIMARY_HOST = os.getenv("OLLAMA_PRIMARY_HOST", "https://chat-impact.fernuni-hagen.de/ollama")
+OLLAMA_PRIMARY_AUTH_TOKEN = os.getenv("OLLAMA_PRIMARY_AUTH_TOKEN", "sk-bcfd247473744ea1a2e2fa38b1ec9254")
+OLLAMA_FALLBACK_HOST = os.getenv("OLLAMA_FALLBACK_HOST", "http://catalpa-llm.fernuni-hagen.de:11434/")
+OLLAMA_FALLBACK_AUTH_TOKEN = os.getenv("OLLAMA_FALLBACK_AUTH_TOKEN", "sk-7613be4746b7401a9249075429eba771")
+OLLAMA_VERIFY_SSL = os.getenv("OLLAMA_VERIFY_SSL", "True").lower() == "true"
+OLLAMA_DEFAULT_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "phi4:latest")
+OLLAMA_REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "300"))  # 5 minutes default
+OLLAMA_ENABLE_FALLBACK = os.getenv("OLLAMA_ENABLE_FALLBACK", "True").lower() == "true"

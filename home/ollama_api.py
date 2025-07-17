@@ -1,42 +1,53 @@
 import logging
 from ollama import Client
+from django.conf import settings
 
-# Define your default configuration once.
-PRIMARY_DEFAULT_HEADER = {
-    "Authorization": "Bearer sk-bcfd247473744ea1a2e2fa38b1ec9254",
-    "Content-Type": "application/json"
-}
-PRIMARY_HOST = "https://chat-impact.fernuni-hagen.de/ollama"   # Replace with your ollama host
-FALLBACK_HOST = "http://catalpa-llm.fernuni-hagen.de:11434/"  # Replace with your fallback host
-FALLBACK_DEFAULT_HEADER = {
-    "Authorization": "Bearer sk-7613be4746b7401a9249075429eba771",
-    "Content-Type": "application/json"
-}
-VERIFY_SSL = True  # Disables SSL certificate verification 
+def get_primary_headers():
+    """Get headers for primary Ollama host"""
+    headers = {"Content-Type": "application/json"}
+    if settings.OLLAMA_PRIMARY_AUTH_TOKEN:
+        headers["Authorization"] = f"Bearer {settings.OLLAMA_PRIMARY_AUTH_TOKEN}"
+    return headers
+
+def get_fallback_headers():
+    """Get headers for fallback Ollama host"""
+    headers = {"Content-Type": "application/json"}
+    if settings.OLLAMA_FALLBACK_AUTH_TOKEN:
+        headers["Authorization"] = f"Bearer {settings.OLLAMA_FALLBACK_AUTH_TOKEN}"
+    return headers 
 
 def get_client():
     """
     Creates and returns an Ollama Client.
-    It tries the PRIMARY_HOST first and falls back to FALLBACK_HOST if necessary.
+    It tries the primary host first and falls back to fallback host if necessary.
     """
     try:
         client = Client(
-            host=PRIMARY_HOST,
-            headers=PRIMARY_DEFAULT_HEADER,
-            verify=VERIFY_SSL,
+            host=settings.OLLAMA_PRIMARY_HOST,
+            headers=get_primary_headers(),
+            verify=settings.OLLAMA_VERIFY_SSL,
+            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
         )
-        #lightweight operation here to verify connectivity.
+        # Lightweight operation here to verify connectivity
         client.list()
+        logging.info("Connected to primary Ollama host: %s", settings.OLLAMA_PRIMARY_HOST)
         return client
     except Exception as primary_error:
         logging.error("Primary host failed: %s", primary_error)
         print("Primary host failed: " + str(primary_error))
+        
+        if not settings.OLLAMA_ENABLE_FALLBACK:
+            logging.error("Fallback is disabled, raising primary error")
+            raise primary_error
+            
         try:
             client = Client(
-                host=FALLBACK_HOST,
-                headers=FALLBACK_DEFAULT_HEADER,
-                verify=False
+                host=settings.OLLAMA_FALLBACK_HOST,
+                headers=get_fallback_headers(),
+                verify=False,  # Fallback typically uses less secure connection
+                timeout=settings.OLLAMA_REQUEST_TIMEOUT,
             )
+            logging.info("Connected to fallback Ollama host: %s", settings.OLLAMA_FALLBACK_HOST)
             return client
         except Exception as fallback_error:
             logging.error("Fallback host also failed: %s", fallback_error)
@@ -44,13 +55,17 @@ def get_client():
             # Reraise the exception so the calling function knows something went wrong.
             raise fallback_error
 
-def stream_chat_response(prompt, model="phi4:latest"):
+def stream_chat_response(prompt, model=None):
     """
     Uses the Ollama Client to call the chat API with streaming enabled.
     The client is configured with a primary host and falls back to an alternative host if needed.
     """
+    if model is None:
+        model = settings.OLLAMA_DEFAULT_MODEL
+        
     try:
         client = get_client()
+        logging.info("Starting chat stream with model: %s", model)
         stream = client.chat(
             model=model,
             messages=[{"role": "user", "content": prompt}],
@@ -81,8 +96,24 @@ def list_models():
         models = response.models
         # Build a list of model names.
         model_names = [m.model for m in models]
+        logging.info("Available models: %s", model_names)
         return model_names
     except Exception as e:
         logging.error("Error during listing models: %s", e)
         return []
+
+def get_ollama_config():
+    """
+    Returns the current Ollama configuration for debugging/info purposes.
+    """
+    return {
+        "primary_host": settings.OLLAMA_PRIMARY_HOST,
+        "fallback_host": settings.OLLAMA_FALLBACK_HOST,
+        "verify_ssl": settings.OLLAMA_VERIFY_SSL,
+        "default_model": settings.OLLAMA_DEFAULT_MODEL,
+        "request_timeout": settings.OLLAMA_REQUEST_TIMEOUT,
+        "enable_fallback": settings.OLLAMA_ENABLE_FALLBACK,
+        "has_primary_auth": bool(settings.OLLAMA_PRIMARY_AUTH_TOKEN),
+        "has_fallback_auth": bool(settings.OLLAMA_FALLBACK_AUTH_TOKEN),
+    }
 

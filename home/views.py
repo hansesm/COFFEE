@@ -149,7 +149,8 @@ def feedback_stream(request, feedback_uuid, criteria_uuid):
         custom_prompt = custom_prompt.replace("##course_context##", course.course_context or "")
 
         # Use a fallback model name if criteria.llm is empty
-        model_name = criteria.llm.strip() if criteria.llm and criteria.llm.strip() else "phi4:latest"
+        from django.conf import settings
+        model_name = criteria.llm.strip() if criteria.llm and criteria.llm.strip() else settings.OLLAMA_DEFAULT_MODEL
 
         generator = stream_chat_response(custom_prompt, model_name)
 
