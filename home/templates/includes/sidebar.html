@@ -1,6 +1,11 @@
 {% load i18n static %}
 <!-- Sidebar -->
 <div id="sidebar" class="sidebar bg-light">
+  <!-- Sidebar Logo -->
+  <div class="sidebar-logo">
+    <img src="{% static 'img/logo.png' %}" alt="Logo" class="logo-img" />
+    <span class="logo-text">COFFEE</span>
+  </div>
   <!-- Sidebar Navigation Links -->
   <ul class="nav flex-column">
     <!-- Home Link -->
@@ -22,10 +27,10 @@
     <!-- Manager Section -->
     {% if is_manager %}
       <li class="nav-item">
-        <a class="nav-link">
+        <div class="nav-section-header">
           <i class="fas fa-cogs me-2"></i>
           <span>{% trans 'Administration' %}</span>
-        </a>
+        </div>
         <ul class="nav flex-column ms-3">
           <li class="nav-item">
             <a class="nav-link {% if request.path == '/course/' %}active{% endif %}"

@@ -1,0 +1,85 @@
+###############################################################################
+# 1) ConfigMap: Umgebungsvariablen für Django und Postgres
+###############################################################################
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feedback-app-config
+data:
+  # Django-Settings
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_HOST: "127.0.0.1"
+  DB_PORT: "5432"
+  DB_NAME: "coffee"
+  DB_USERNAME: "dbuser"
+  DB_PASS: "mNNzZMbC9dei65DtMz6s"
+  SECRET_KEY: "&q8(b3s3$wiyc*lo4umj$vpdp6c197pn*2hqw=ritd$%sho-!)"
+  DEBUG: "FALSE"
+
+  # Postgres-Settings
+  POSTGRES_USER: "dbuser"
+  POSTGRES_PASSWORD: "mNNzZMbC9dei65DtMz6s"
+  POSTGRES_DB: "coffee"
+
+---
+###############################################################################
+# 2) Pod: Enthält 2 Container: Postgres & Django-App
+###############################################################################
+apiVersion: v1
+kind: Pod
+metadata:
+  name: feedback-app-pod
+spec:
+  containers:
+    ############################################################################
+    # Container A: Postgres
+    ############################################################################
+    - name: feedback-db
+      image: docker.io/postgres:16.4
+      env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: feedback-app-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: feedback-app-config
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: feedback-app-config
+              key: POSTGRES_DB
+
+      ports:
+        - containerPort: 5432
+          hostPort: 30084    # Optional: DB nach außen auf Host-Port 30084
+
+      volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+
+    ############################################################################
+    # Container B: Django-App
+    ############################################################################
+    - name: feedback-app
+      image: ghcr.io/hansesm/fb_coffee:latest
+      # Laden der Django-Umgebungsvariablen (DB_HOST, DB_PORT, etc.)
+      envFrom:
+        - configMapRef:
+            name: feedback-app-config
+
+      ports:
+        - containerPort: 8000
+          hostPort: 30080   # Django-App auf Host-Port 30080 -> Container 8000
+
+  volumes:
+    - name: postgres-storage
+      hostPath:
+        path: /var/lib/containers/postgres-data  # or a path of your choice
+        # Vergiss nicht:
+        #   sudo mkdir -p /var/lib/containers/postgres-data
+        #   sudo chcon -R -t container_file_t /var/lib/containers/postgres-data
+        # falls SELinux aktiv ist

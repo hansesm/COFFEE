@@ -11,6 +11,3 @@ env
 
 #src
 *.sqlite*
-.env
-*.yaml
-*.yml

@@ -26,7 +26,7 @@ def get_client():
             host=settings.OLLAMA_PRIMARY_HOST,
             headers=get_primary_headers(),
             verify=settings.OLLAMA_VERIFY_SSL,
-            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+            timeout=5,  # Shorter timeout for connection test
         )
         # Lightweight operation here to verify connectivity
         client.list()
@@ -45,8 +45,10 @@ def get_client():
                 host=settings.OLLAMA_FALLBACK_HOST,
                 headers=get_fallback_headers(),
                 verify=False,  # Fallback typically uses less secure connection
-                timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+                timeout=5,  # Shorter timeout for connection test
             )
+            # Test fallback connection
+            client.list()
             logging.info("Connected to fallback Ollama host: %s", settings.OLLAMA_FALLBACK_HOST)
             return client
         except Exception as fallback_error:
@@ -100,7 +102,8 @@ def list_models():
         return model_names
     except Exception as e:
         logging.error("Error during listing models: %s", e)
-        return []
+        # Re-raise the exception so the view can handle it properly
+        raise e
 
 def get_ollama_config():
     """

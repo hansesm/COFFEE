@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feedback-app-config
+  namespace: fbapp
+data:
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_USERNAME: "dbuser"
+  DB_PASS: "mNNzZMbC9dei65DtMz6s"
+  DB_HOST: "feedback-app-postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "coffee"
+  POSTGRES_USER: "dbuser"
+  POSTGRES_PASSWORD: "mNNzZMbC9dei65DtMz6s"
+  POSTGRES_DB: "coffee"
+  SECRET_KEY: "&q8(b3s3$wiyc*lo4umj$vpdp6c197pn*2hqw=ritd$%sho-!)"
+  DEBUG: "FALSE"

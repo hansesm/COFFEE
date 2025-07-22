@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-app-deployment
+  namespace: fbapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fb_coffee
+  template:
+    metadata:
+      labels:
+        app: fb_coffee
+    spec:
+      containers:
+        - name: feedback-app
+          image: ghcr.io/hansesm/fb_coffee@sha256:f8dc034662a6b9eb2791e28a50c355bc9e937bfbee764f44c279af584eccc33f # Replace with the actual image name
+          envFrom:
+            - configMapRef:
+                name: feedback-app-config
+          ports:
+            - containerPort: 8000 # Replace with the actual port your app listens on
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-app-service
+  namespace: fbapp
+spec:
+  selector:
+    app: fb_coffee
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

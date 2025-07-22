@@ -3,6 +3,14 @@
 {% load i18n %}
 {% block content %}
   <div class="container-fluid py-4">
+    {% if llm_models_error %}
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>{% trans 'LLM Service Notice:' %}</strong>
+        {% trans 'The language model service is currently unavailable. You can still manage criteria, but model selection will be limited.' %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
     <div class="row">
       <div class="col-md-12" style="border-right: 1px solid #ddd;">
         <div class="d-flex justify-content-between">
@@ -62,12 +70,12 @@
             <form id="details_form" method="post">
               {% csrf_token %}
               <input type="hidden" id="criteria_id" name="criteria_id" />
-              <div class="form-group">
-                <label for="title">{% trans 'Title' %}</label>
+              <div class="form-group mb-3">
+                <label for="title" class="form-label">{% trans 'Title' %}</label>
                 <input type="text" class="form-control" id="title" name="title" required />
               </div>
-              <div class="form-group">
-                <label for="course_id">{% trans 'Course' %}</label>
+              <div class="form-group mb-3">
+                <label for="course_id" class="form-label">{% trans 'Course' %}</label>
                 <select class="form-control" id="course_id" name="course_id" required>
                   <option value="" disabled selected>{% trans "Select Course" %}</option>
                   {% for course in course_set %}<option value="{{ course.id }}">{{ course.course_name }}</option>{% endfor %}
@@ -77,19 +85,33 @@
                 <input class="form-check-input" type="checkbox" id="active" name="active" />
                 <label class="form-check-label" for="active">{% trans 'Active' %}</label>
               </div>
-              <div class="form-group">
-                <label for="description">{% trans 'Criteria Description' %}</label>
+              <div class="form-group mb-3">
+                <label for="description" class="form-label">{% trans 'Criteria Description' %}</label>
                 <textarea class="form-control" rows="3" id="description" name="description"></textarea>
               </div>
-              <div class="form-group">
-                <label for="llm">{% trans 'Language Model' %}</label>
-                <select class="form-control" id="llm" name="llm">
-                  <option value="">{% trans 'Select Language Model' %}</option>
-                  {% for model in llm_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+              <div class="form-group mb-3">
+                <label for="llm" class="form-label">{% trans 'Language Model' %}</label>
+                <select class="form-control{% if llm_models_error %} is-invalid{% endif %}" id="llm" name="llm"{% if llm_models_error %} disabled{% endif %}>
+                  {% if llm_models_error %}
+                    <option value="" disabled selected>{% trans 'Error loading models - LLM service unavailable' %}</option>
+                  {% elif not llm_models %}
+                    <option value="" disabled selected>{% trans 'No models available' %}</option>
+                  {% else %}
+                    <option value="">{% trans 'Select Language Model' %}</option>
+                    {% for model in llm_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+                  {% endif %}
                 </select>
+                {% if llm_models_error %}
+                  <div class="invalid-feedback d-block">
+                    <small>
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% trans 'LLM service unavailable. You can save criteria without selecting a model.' %}
+                    </small>
+                  </div>
+                {% endif %}
               </div>
-              <div class="form-group">
-                <label for="prompt">{% trans 'Prompt' %}</label>
+              <div class="form-group mb-3">
+                <label for="prompt" class="form-label">{% trans 'Prompt' %}</label>
                 <textarea class="form-control" rows="5" id="prompt" name="prompt" required></textarea>
                 <!-- Explanation Below Prompt -->
                 <small class="form-text text-muted">
@@ -97,12 +119,12 @@
                   ##submission##, ##task_title##, ##task_description##, ##task_context##, ##course_context##
                 </small>
               </div>
-              <div class="form-group">
-                <label for="sequels">{% trans 'Sequels' %}</label>
+              <div class="form-group mb-3">
+                <label for="sequels" class="form-label">{% trans 'Sequels' %}</label>
                 <textarea class="form-control" rows="3" id="sequels" name="sequels"></textarea>
               </div>
-              <div class="form-group">
-                <label for="tag">{% trans 'Tag' %}</label>
+              <div class="form-group mb-3">
+                <label for="tag" class="form-label">{% trans 'Tag' %}</label>
                 <input type="text" class="form-control" id="tag" name="tag" />
               </div>
             </form>
@@ -138,8 +160,10 @@
             $('#sequels').val($(this).data('sequels'));
             $('#tag').val($(this).data('tag'));
 
-            // Set the llm dropdown value
-            $('#llm').val($(this).data('llm'));
+            // Set the llm dropdown value (only if dropdown is not disabled)
+            if (!$('#llm').is(':disabled')) {
+                $('#llm').val($(this).data('llm'));
+            }
 
             // Set the course dropdown value
             var courseId = $(this).data('course_id');
@@ -159,7 +183,9 @@
             $('#prompt').val('');
             $('#sequels').val('');
             $('#tag').val('');
-            $('#llm').val(''); 
+            if (!$('#llm').is(':disabled')) {
+                $('#llm').val('');
+            }
             $('#course_id').val('');
 
             $('#modalTitle').text('{% trans "Add New Criteria" %}');
@@ -174,7 +200,7 @@
                 title: $('#title').val(),
                 active: $('#active').is(':checked') ? "true" : "false",
                 description: $('#description').val(),
-                llm: $('#llm').val(),
+                llm: $('#llm').is(':disabled') ? '' : $('#llm').val(),
                 prompt: $('#prompt').val(),
                 sequels: $('#sequels').val(),
                 tag: $('#tag').val(),

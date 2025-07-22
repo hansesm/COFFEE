@@ -560,7 +560,20 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
             Q(editing_groups__in=request.user.groups.all())
         ).distinct()
 
-        llm_models = list_models()  # returns a list of available LLM model names
+        # Try to get LLM models, but don't fail the entire page if Ollama is unavailable
+        llm_models_error = None
+        llm_models = []
+        
+        try:
+            logging.info("Attempting to fetch LLM models...")
+            llm_models = list_models()  
+            llm_models_error = "LLM service temporarily disabled for testing"
+            logging.info("Using empty LLM models list for testing")
+        except Exception as e:
+            logging.error("Failed to fetch LLM models: %s", e)
+            llm_models = []
+            llm_models_error = str(e)
+            logging.info("Continuing with empty LLM models list due to error")
 
         return render(
             request,
@@ -569,6 +582,7 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
                 "criteria_set": criteria_set,
                 "course_set": course_set,
                 "llm_models": llm_models,
+                "llm_models_error": llm_models_error,
             },
         )
 

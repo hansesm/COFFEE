@@ -34,6 +34,9 @@ if not DEBUG:
 
 from django.utils.translation import gettext_lazy as _
 
+# Application Version
+APP_VERSION = "1.0.0"
+
 # Enable internationalization
 USE_I18N = True
 USE_L10N = True
@@ -121,6 +124,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "home.context_processors.add_is_manager",
+                "home.context_processors.app_version",
                 "django.template.context_processors.i18n",
             ],
         },

@@ -1,19 +1,17 @@
 {% load static %}
-<!-- CSS Dependencies -->
-<link rel="stylesheet" href="{% static 'css/custom.css' %}" />
-<!-- Font Awesome -->
-<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<!-- Core CSS Dependencies -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous">
-<!-- MDB CSS (compatible with Bootstrap 5) -->
+<!-- Font Awesome Icons -->
 <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" />
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <!-- DataTables CSS -->
 <link rel="stylesheet"
       href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css" />
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{% static 'css/custom.css' %}" />
 <!-- JavaScript Dependencies -->
 <!-- jQuery (required for DataTables and some plugins) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -37,7 +35,7 @@
       localStorage.setItem('sidebarMinimized', isMinimized);
     }
 
-    // Apply minimized or expanded *while* still in preload:
+    // Apply minimized or expanded *while* still in preload (no transitions):
     if (isMinimized === 'true') {
       sidebar.classList.add('minimized');
       body.classList.add('sidebar-minimized');
@@ -47,9 +45,13 @@
     }
   }
 
+  // Set sidebar state before removing preload to prevent animation
   setSidebarState();
 
-  body.classList.remove('preload');
+  // Small delay to ensure styles are applied before enabling transitions
+  requestAnimationFrame(() => {
+    body.classList.remove('preload');
+  });
 
   if (sidebar && sidebarCollapse) {
     sidebarCollapse.addEventListener('click', function() {
