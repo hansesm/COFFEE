@@ -98,7 +98,7 @@
                     <option value="" disabled selected>{% trans 'No models available' %}</option>
                   {% else %}
                     <option value="">{% trans 'Select Language Model' %}</option>
-                    {% for model in llm_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+                    {% for model in llm_models %}<option value="{{ model.name }}::{{ model.backend }}">{{ model.display_name }}</option>{% endfor %}
                   {% endif %}
                 </select>
                 {% if llm_models_error %}

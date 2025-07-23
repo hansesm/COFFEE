@@ -225,11 +225,27 @@ GRAPH_MODELS = {
 }
 
 # Ollama API Configuration
-OLLAMA_PRIMARY_HOST = os.getenv("OLLAMA_PRIMARY_HOST", "https://chat-impact.fernuni-hagen.de/ollama")
-OLLAMA_PRIMARY_AUTH_TOKEN = os.getenv("OLLAMA_PRIMARY_AUTH_TOKEN", "sk-bcfd247473744ea1a2e2fa38b1ec9254")
-OLLAMA_FALLBACK_HOST = os.getenv("OLLAMA_FALLBACK_HOST", "http://catalpa-llm.fernuni-hagen.de:11434/")
-OLLAMA_FALLBACK_AUTH_TOKEN = os.getenv("OLLAMA_FALLBACK_AUTH_TOKEN", "sk-7613be4746b7401a9249075429eba771")
-OLLAMA_VERIFY_SSL = os.getenv("OLLAMA_VERIFY_SSL", "True").lower() == "true"
+OLLAMA_PRIMARY_HOST = os.getenv("OLLAMA_PRIMARY_HOST", "")
+OLLAMA_PRIMARY_AUTH_TOKEN = os.getenv("OLLAMA_PRIMARY_AUTH_TOKEN", "")
+OLLAMA_PRIMARY_VERIFY_SSL = os.getenv("OLLAMA_PRIMARY_VERIFY_SSL", "True").lower() == "true"
+OLLAMA_FALLBACK_HOST = os.getenv("OLLAMA_FALLBACK_HOST", "")
+OLLAMA_FALLBACK_AUTH_TOKEN = os.getenv("OLLAMA_FALLBACK_AUTH_TOKEN", "")
+OLLAMA_FALLBACK_VERIFY_SSL = os.getenv("OLLAMA_FALLBACK_VERIFY_SSL", "True").lower() == "true"
 OLLAMA_DEFAULT_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "phi4:latest")
 OLLAMA_REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "300"))  # 5 minutes default
 OLLAMA_ENABLE_FALLBACK = os.getenv("OLLAMA_ENABLE_FALLBACK", "True").lower() == "true"
+
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+AZURE_OPENAI_DEPLOYMENT_NAMES = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAMES", "gpt-4").split(",")
+AZURE_OPENAI_MAX_TOKENS = int(os.getenv("AZURE_OPENAI_MAX_TOKENS", "2000"))
+AZURE_OPENAI_TEMPERATURE = float(os.getenv("AZURE_OPENAI_TEMPERATURE", "0.7"))
+
+# LLM Backend Display Names
+LLM_BACKEND_DISPLAY_NAMES = {
+    'ollama': os.getenv("LLM_OLLAMA_DISPLAY_NAME", "Ollama"),
+    'azure_openai': os.getenv("LLM_AZURE_OPENAI_DISPLAY_NAME", "Azure OpenAI"),
+}

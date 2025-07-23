@@ -17,6 +17,8 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
     HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseServerError,
     JsonResponse,
     StreamingHttpResponse,
 )
@@ -150,11 +152,16 @@ def feedback_stream(request, feedback_uuid, criteria_uuid):
         custom_prompt = custom_prompt.replace("##course_name##", course.course_name or "")
         custom_prompt = custom_prompt.replace("##course_context##", course.course_context or "")
 
-        # Use a fallback model name if criteria.llm is empty
+        # Parse model and backend from criteria.llm field
         from django.conf import settings
-        model_name = criteria.llm.strip() if criteria.llm and criteria.llm.strip() else settings.OLLAMA_DEFAULT_MODEL
-
-        generator = stream_chat_response(custom_prompt, model_name)
+        from .llm_backends import parse_model_backend, stream_llm_response
+        
+        llm_field = criteria.llm.strip() if criteria.llm and criteria.llm.strip() else settings.OLLAMA_DEFAULT_MODEL
+        model_name, backend = parse_model_backend(llm_field)
+        
+        logging.info(f"Using {backend} backend with model: {model_name}")
+        
+        generator = stream_llm_response(model_name, backend, user_input, custom_prompt)
 
         # 2) Wrap the generator in a StreamingHttpResponse
         streaming_response = StreamingHttpResponse(generator, content_type="text/plain")
@@ -565,10 +572,10 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
         llm_models = []
         
         try:
-            logging.info("Attempting to fetch LLM models...")
-            llm_models = list_models()  
-            llm_models_error = "LLM service temporarily disabled for testing"
-            logging.info("Using empty LLM models list for testing")
+            logging.info("Attempting to fetch LLM models from all backends...")
+            from .llm_backends import get_all_available_models
+            llm_models = get_all_available_models()
+            logging.info("Successfully fetched %d LLM models from all backends", len(llm_models))
         except Exception as e:
             logging.error("Failed to fetch LLM models: %s", e)
             llm_models = []
@@ -730,7 +737,10 @@ def save_feedback_session(request):
                     nps_score__isnull=True
                 ).exclude(id=new_session.id).delete()
 
-            return JsonResponse({"message": "Feedback session saved successfully"})
+            return JsonResponse({
+                "message": "Feedback session saved successfully",
+                "session_id": str(new_session.id)
+            })
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON in request body"}, status=400)
@@ -814,6 +824,181 @@ class FeedbackSessionCSVView(ManagerRequiredMixin, View):
             ])
         
         return response
+
+
+def feedback_pdf_download(request, feedback_session_id):
+    """Generate and download PDF for a specific feedback session."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    import pytz
+    import json
+    from django.utils.translation import gettext as _
+    
+    try:
+        # Get the feedback session
+        session = FeedbackSession.objects.select_related(
+            'course', 'feedback', 'feedback__task'
+        ).get(id=feedback_session_id)
+        
+        # Check if user has permission to download this session
+        user_has_permission = (
+            # User owns this session (by session key for anonymous users)
+            session.session_key == request.session.session_key or
+            # Authenticated user who created this session
+            (request.user.is_authenticated and request.user.username == session.staff_user) or
+            # Users with course viewing/editing permissions
+            (session.course and (
+                session.course.viewing_groups.filter(id__in=request.user.groups.all()).exists() or
+                session.course.editing_groups.filter(id__in=request.user.groups.all()).exists()
+            ))
+        )
+        
+        if not user_has_permission:
+            return HttpResponseForbidden("You don't have permission to download this feedback.")
+        
+        # Create HTTP response with PDF content type
+        response = HttpResponse(content_type='application/pdf')
+        filename = f"feedback_{session.feedback.task.title}_{session.timestamp.astimezone(pytz.timezone('Europe/Berlin')).strftime('%Y%m%d_%H%M%S')}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.8*inch)
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Title'],
+            fontSize=16,
+            spaceAfter=20,
+            alignment=TA_CENTER
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=10,
+            spaceBefore=15
+        )
+        
+        content_style = ParagraphStyle(
+            'CustomContent',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=8,
+            alignment=TA_LEFT
+        )
+        
+        # Build PDF content
+        story = []
+        
+        # Title
+        story.append(Paragraph(_("Feedback Report"), title_style))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Header information table
+        header_data = [
+            [_('Course:'), session.course.course_name if session.course else _('N/A')],
+            [_('Task:'), session.feedback.task.title if session.feedback and session.feedback.task else _('N/A')],
+            [_('Date:'), session.timestamp.astimezone(pytz.timezone('Europe/Berlin')).strftime('%d.%m.%Y %H:%M:%S')],
+        ]
+        
+        if session.nps_score:
+            header_data.append([_('Rating:'), f"{session.nps_score}/10"])
+        
+        header_table = Table(header_data, colWidths=[1.5*inch, 4*inch])
+        header_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        
+        story.append(header_table)
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Task description (if available)
+        if session.feedback and session.feedback.task and session.feedback.task.description:
+            story.append(Paragraph(_("Task Description"), heading_style))
+            task_description = str(session.feedback.task.description) if session.feedback.task.description else _("No description available")
+            story.append(Paragraph(task_description, content_style))
+            story.append(Spacer(1, 0.2*inch))
+        
+        # User submission
+        story.append(Paragraph(_("User Solution"), heading_style))
+        submission_text = str(session.submission) if session.submission else _("No submission provided")
+        story.append(Paragraph(submission_text, content_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # AI feedback for each criteria
+        story.append(Paragraph(_("AI Feedback"), heading_style))
+        
+        if session.feedback_data:
+            try:
+                feedback_data = json.loads(session.feedback_data) if isinstance(session.feedback_data, str) else session.feedback_data
+                
+                # Extract criteria responses from the feedback data structure
+                criteria_list = feedback_data.get('criteria', [])
+                
+                if criteria_list:
+                    for criterion in criteria_list:
+                        if isinstance(criterion, dict):
+                            criteria_title = criterion.get('title', _('Unknown Criteria'))
+                            criteria_id = criterion.get('id')
+                            feedback_text = criterion.get('ai_response', _('No feedback provided'))
+                            
+                            # Ensure feedback_text is a string
+                            if not isinstance(feedback_text, str):
+                                feedback_text = str(feedback_text) if feedback_text else _("No feedback provided")
+                            
+                            # Get criteria description from database
+                            criteria_description = None
+                            if criteria_id:
+                                try:
+                                    from .models import Criteria
+                                    criteria_obj = Criteria.objects.get(id=criteria_id)
+                                    criteria_description = criteria_obj.description
+                                except:
+                                    pass
+                            
+                            # Add criteria title
+                            story.append(Paragraph(f"<b>{criteria_title}</b>", content_style))
+                            
+                            # Add criteria description if available
+                            if criteria_description:
+                                story.append(Paragraph(f"<i>{_('Description:')}</i> {criteria_description}", content_style))
+                                story.append(Spacer(1, 0.1*inch))
+                            
+                            # Add feedback text
+                            story.append(Paragraph(f"<i>{_('Feedback:')}</i>", content_style))
+                            story.append(Paragraph(feedback_text, content_style))
+                            story.append(Spacer(1, 0.2*inch))
+                else:
+                    # Fallback: try to find criteria responses in a different structure
+                    story.append(Paragraph(_("No criteria feedback found in the expected format"), content_style))
+                    
+            except (json.JSONDecodeError, TypeError) as e:
+                story.append(Paragraph(f"{_('Error parsing feedback data:')} {str(e)}", content_style))
+        else:
+            story.append(Paragraph(_("No feedback data available"), content_style))
+        
+        # Build PDF
+        doc.build(story)
+        
+        return response
+        
+    except FeedbackSession.DoesNotExist:
+        return HttpResponseNotFound("Feedback session not found")
+    except Exception as e:
+        return HttpResponseServerError(f"Error generating PDF: {str(e)}")
 
 
 # -------------------------------------------------------------------------

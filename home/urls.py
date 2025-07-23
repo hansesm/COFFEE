@@ -37,6 +37,7 @@ urlpatterns = [
     ),
     path("analysis/", views.FeedbackSessionAnalysisView.as_view(), name="analysis"),
     path("analysis/download/", FeedbackSessionCSVView.as_view(), name="feedback_csv"),
+    path("feedback/<uuid:feedback_session_id>/download/", views.feedback_pdf_download, name="feedback_pdf_download"),
     path("accounts/login/", views.UserLoginView.as_view(), name="login"),
     path("accounts/logout/", views.logout_view, name="logout"),
     path("accounts/register/", views.register, name="register"),

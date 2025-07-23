@@ -79,6 +79,7 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
             </div>
           </div>
         </div>
+        
         {% for feedback in feedbackcriteria_set.all %}
           <div id="feedbackSection_{{ feedback.criteria.id }}"
                class="card feedback-card shadow-sm mb-3 feedback-section"
@@ -96,34 +97,52 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
               <textarea id="aiResponse_{{ feedback.criteria.id }}"
                         class="form-control ai-response"
                         name="aiResponse_{{ feedback.criteria.id }}"
-                        rows="6"
+                        rows="10"
                         disabled></textarea>
-            </div>
-            <!-- Offcanvas for Criteria Info -->
-            <div class="offcanvas offcanvas-end"
-                 tabindex="-1"
-                 id="offcanvas{{ feedback.criteria.id }}"
-                 aria-labelledby="offcanvasLabel{{ feedback.criteria.id }}">
-              <div class="offcanvas-header">
-                <h5 id="offcanvasLabel_{{ feedback.criteria.id }}"
-                    class="offcanvas-title">{{ feedback.criteria.title }}</h5>
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="offcanvas"
-                        aria-label="Close"></button>
-              </div>
-              <div class="offcanvas-body">
-                <p id="criteriaDescription_{{ feedback.criteria.id }}">{{ feedback.criteria.description }}</p>
-                <hr>
-                <h6>{% trans 'Prompt' %}</h6>
-                <p id="criteriaPrompt_{{ feedback.criteria.id }}">{{ feedback.criteria.prompt }}</p>
-              </div>
             </div>
           </div>
         {% endfor %}
+        
+        <!-- Download PDF Card (always visible at bottom) -->
+        <div id="downloadSection" class="card feedback-card shadow-sm mb-3">
+          <div class="card-body text-center">
+            <h5 class="card-title">{% trans 'Download Your Feedback' %}</h5>
+            <p class="text-muted">{% trans 'Save your feedback as a PDF document' %}</p>
+            <button id="downloadPdfBtn" class="btn btn-primary" disabled>
+              <i class="fas fa-download me-2"></i>{% trans 'Download PDF' %}
+            </button>
+            <div id="downloadStatus" class="mt-2">
+              <small class="text-muted">{% trans 'Complete the feedback process to enable download' %}</small>
+            </div>
+          </div>
+        </div>
+        
       </div>
     </div>
   </div>
+
+  <!-- Offcanvas elements moved outside card containers for full height -->
+  {% for feedback in feedbackcriteria_set.all %}
+    <div class="offcanvas offcanvas-end"
+         tabindex="-1"
+         id="offcanvas{{ feedback.criteria.id }}"
+         aria-labelledby="offcanvasLabel{{ feedback.criteria.id }}">
+      <div class="offcanvas-header">
+        <h5 id="offcanvasLabel_{{ feedback.criteria.id }}"
+            class="offcanvas-title">{{ feedback.criteria.title }}</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <p id="criteriaDescription_{{ feedback.criteria.id }}">{{ feedback.criteria.description }}</p>
+        <hr>
+        <h6>{% trans 'Prompt' %}</h6>
+        <p id="criteriaPrompt_{{ feedback.criteria.id }}">{{ feedback.criteria.prompt }}</p>
+      </div>
+    </div>
+  {% endfor %}
   {% include 'includes/footer.html' %}
 {% endblock %}
 {% block scripts %}
@@ -153,6 +172,10 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
       // 1) Show top loading bar immediately with 100% width
       $('#topLoadingBar').show();
       $('#topLoadingBarProgress').css('width', '100%');
+
+      // Update download status during generation
+      $('#downloadPdfBtn').prop('disabled', true);
+      $('#downloadStatus').html('<small class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>{% trans "Generating feedback..." %}</small>');
 
       // Clear old AI responses
       $('.ai-response').val('');
@@ -210,6 +233,8 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
           if (completedRequests === totalRequests) {
             // 3) Hide the progress bar once all requests are done
             $('#topLoadingBar').fadeOut();
+            // Update download status - feedback generated, waiting for rating
+            $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
             saveFeedbackSession(feedbackData);
           }
         };
@@ -234,6 +259,16 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
         saveFeedbackSession(feedbackData);
       });
     });
+
+    // Handle PDF download button click
+    $('#downloadPdfBtn').click(function() {
+      var sessionId = $(this).data('session-id');
+      if (sessionId) {
+        // Create download URL and trigger download
+        var downloadUrl = '/feedback/' + sessionId + '/download/';
+        window.location.href = downloadUrl;
+      }
+    });
   });
 
   // Save feedback session
@@ -248,6 +283,12 @@ and confirm that you have read our <a href="/policies/" class="text-primary">Dis
       },
       success: function (response) {
         // Session saved successfully
+        if (response.session_id) {
+          // Enable download button and set up the download URL
+          $('#downloadPdfBtn').prop('disabled', false);
+          $('#downloadPdfBtn').data('session-id', response.session_id);
+          $('#downloadStatus').html('<small class="text-success"><i class="fas fa-check me-1"></i>{% trans "Ready to download" %}</small>');
+        }
       },
       error: function (error) {
         // Handle error in saving session

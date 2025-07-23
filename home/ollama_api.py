@@ -25,7 +25,7 @@ def get_client():
         client = Client(
             host=settings.OLLAMA_PRIMARY_HOST,
             headers=get_primary_headers(),
-            verify=settings.OLLAMA_VERIFY_SSL,
+            verify=settings.OLLAMA_PRIMARY_VERIFY_SSL,
             timeout=5,  # Shorter timeout for connection test
         )
         # Lightweight operation here to verify connectivity
@@ -44,7 +44,7 @@ def get_client():
             client = Client(
                 host=settings.OLLAMA_FALLBACK_HOST,
                 headers=get_fallback_headers(),
-                verify=False,  # Fallback typically uses less secure connection
+                verify=settings.OLLAMA_FALLBACK_VERIFY_SSL,
                 timeout=5,  # Shorter timeout for connection test
             )
             # Test fallback connection
@@ -111,8 +111,9 @@ def get_ollama_config():
     """
     return {
         "primary_host": settings.OLLAMA_PRIMARY_HOST,
+        "primary_verify_ssl": settings.OLLAMA_PRIMARY_VERIFY_SSL,
         "fallback_host": settings.OLLAMA_FALLBACK_HOST,
-        "verify_ssl": settings.OLLAMA_VERIFY_SSL,
+        "fallback_verify_ssl": settings.OLLAMA_FALLBACK_VERIFY_SSL,
         "default_model": settings.OLLAMA_DEFAULT_MODEL,
         "request_timeout": settings.OLLAMA_REQUEST_TIMEOUT,
         "enable_fallback": settings.OLLAMA_ENABLE_FALLBACK,

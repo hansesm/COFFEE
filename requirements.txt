@@ -6,3 +6,5 @@ psycopg2-binary
 ollama
 requests
 django-extensions
+reportlab
+openai
