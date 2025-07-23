@@ -8,3 +8,4 @@ requests
 django-extensions
 reportlab
 openai
+dj-database-url
