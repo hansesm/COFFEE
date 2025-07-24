@@ -9,3 +9,4 @@ django-extensions
 reportlab
 openai
 dj-database-url
+azure-ai-inference

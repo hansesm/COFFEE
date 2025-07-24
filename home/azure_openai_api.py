@@ -3,6 +3,8 @@ import logging
 from openai import AzureOpenAI
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
 def get_azure_client():
     """
     Creates and returns an Azure OpenAI Client.
@@ -24,40 +26,45 @@ def get_azure_client():
                 max_tokens=1,
                 timeout=5
             )
-            logging.info("Azure OpenAI client connection test successful")
+            logger.info("Azure OpenAI client connection test successful")
             return client
         except Exception as test_error:
-            logging.warning(f"Azure OpenAI client created but connection test failed: {test_error}")
+            logger.warning(f"Azure OpenAI client created but connection test failed: {test_error}")
             # Return client anyway, as the test might fail due to deployment configuration
             return client
             
     except Exception as e:
-        logging.error(f"Failed to create Azure OpenAI client: {e}")
+        logger.error(f"Failed to create Azure OpenAI client: {e}")
         return None
 
 def list_azure_models():
     """
-    Returns available Azure OpenAI models/deployments.
-    Since Azure OpenAI uses deployments, we'll return configured deployment names.
+    Returns available Azure OpenAI models/deployments from configuration.
+    Uses hardcoded deployment names with fallback handling for removed deployments.
     """
     try:
         deployment_name = getattr(settings, 'AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-4')
         deployment_names = getattr(settings, 'AZURE_OPENAI_DEPLOYMENT_NAMES', [deployment_name])
         
-        # Return deployment names as model list
+        # Ensure deployment_names is a list
+        if isinstance(deployment_names, str):
+            deployment_names = [name.strip() for name in deployment_names.split(',')]
+        
         models = []
         for deployment in deployment_names:
-            models.append({
-                'name': deployment,
-                'backend': 'azure_openai'
-            })
+            if deployment.strip():  # Skip empty strings
+                models.append({
+                    'name': deployment.strip(),
+                    'backend': 'azure_openai'
+                })
         
-        logging.info(f"Found {len(models)} Azure OpenAI deployments")
+        logger.info(f"Found {len(models)} configured Azure OpenAI deployments")
         return models
         
     except Exception as e:
-        logging.error(f"Failed to list Azure OpenAI deployments: {e}")
+        logger.error(f"Failed to list Azure OpenAI models: {e}")
         return []
+
 
 def stream_azure_response(deployment_name, user_input, system_prompt):
     """
@@ -82,7 +89,9 @@ def stream_azure_response(deployment_name, user_input, system_prompt):
             {"role": "user", "content": user_input}
         ]
         
-        logging.info(f"Starting Azure OpenAI stream for deployment: {deployment_name}")
+        logger.info(f"Starting Azure OpenAI stream for deployment: {deployment_name}")
+        logger.info(f"Using endpoint: {getattr(settings, 'AZURE_OPENAI_ENDPOINT', '')}")
+        logger.info(f"Using API version: {getattr(settings, 'AZURE_OPENAI_API_VERSION', '2024-12-01-preview')}")
         
         response = client.chat.completions.create(
             model=deployment_name,
@@ -93,12 +102,21 @@ def stream_azure_response(deployment_name, user_input, system_prompt):
         )
         
         for chunk in response:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+            logger.debug(f"Chunk: {chunk}")
+            if chunk.choices and len(chunk.choices) > 0:
+                if hasattr(chunk.choices[0], 'delta') and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+            else:
+                logger.warning(f"Empty choices in chunk: {chunk}")
                 
     except Exception as e:
-        error_msg = f"Azure OpenAI streaming error: {str(e)}"
-        logging.error(error_msg)
+        error_str = str(e).lower()
+        if 'deploymentnotfound' in error_str or ('deployment' in error_str and 'not exist' in error_str):
+            error_msg = f"Azure OpenAI deployment '{deployment_name}' not found. Please check your deployment configuration or contact your administrator."
+            logger.error(f"Deployment not found: {deployment_name}")
+        else:
+            error_msg = f"Azure OpenAI streaming error: {str(e)}"
+            logger.error(error_msg)
         yield error_msg
 
 def generate_azure_response(deployment_name, user_input, system_prompt):
@@ -123,7 +141,7 @@ def generate_azure_response(deployment_name, user_input, system_prompt):
             {"role": "user", "content": user_input}
         ]
         
-        logging.info(f"Generating Azure OpenAI response for deployment: {deployment_name}")
+        logger.info(f"Generating Azure OpenAI response for deployment: {deployment_name}")
         
         response = client.chat.completions.create(
             model=deployment_name,
@@ -135,6 +153,11 @@ def generate_azure_response(deployment_name, user_input, system_prompt):
         return response.choices[0].message.content
         
     except Exception as e:
-        error_msg = f"Azure OpenAI generation error: {str(e)}"
-        logging.error(error_msg)
+        error_str = str(e).lower()
+        if 'deploymentnotfound' in error_str or ('deployment' in error_str and 'not exist' in error_str):
+            error_msg = f"Azure OpenAI deployment '{deployment_name}' not found. Please check your deployment configuration or contact your administrator."
+            logger.error(f"Deployment not found: {deployment_name}")
+        else:
+            error_msg = f"Azure OpenAI generation error: {str(e)}"
+            logger.error(error_msg)
         return error_msg

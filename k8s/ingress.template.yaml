@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: feedback-app-ingress
+  namespace: fbapp
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # For iframe embedding
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: ALLOWALL";
+spec:
+  ingressClassName: public
+  rules:
+    - host: CHANGE_ME.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: feedback-app-service
+                port:
+                  number: 8000
+  # Uncomment for HTTPS/TLS
+  # tls:
+  #   - hosts:
+  #       - CHANGE_ME.local
+  #     secretName: coffee-tls-secret

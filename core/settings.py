@@ -42,6 +42,35 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Logging configuration
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': LOG_LEVEL,
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'home': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}
+
 # Define available languages
 LANGUAGES = [
     ("en", "English"),
@@ -208,6 +237,10 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
 
+# Allow iframe embedding
+X_FRAME_OPTIONS = 'ALLOWALL'  # Allows embedding in any iframe
+# Alternative: X_FRAME_OPTIONS = 'SAMEORIGIN'  # Only allow same-origin iframes
+
 # Graphviz Configuration
 GRAPH_MODELS = {
   'app_labels': ["home", "auth"],
@@ -220,7 +253,7 @@ OLLAMA_PRIMARY_VERIFY_SSL = os.getenv("OLLAMA_PRIMARY_VERIFY_SSL", "True").lower
 OLLAMA_FALLBACK_HOST = os.getenv("OLLAMA_FALLBACK_HOST", "")
 OLLAMA_FALLBACK_AUTH_TOKEN = os.getenv("OLLAMA_FALLBACK_AUTH_TOKEN", "")
 OLLAMA_FALLBACK_VERIFY_SSL = os.getenv("OLLAMA_FALLBACK_VERIFY_SSL", "True").lower() == "true"
-OLLAMA_DEFAULT_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "phi4:latest")
+OLLAMA_MODEL_NAMES = os.getenv("OLLAMA_MODEL_NAMES", "phi4:latest")
 OLLAMA_REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "300"))  # 5 minutes default
 OLLAMA_ENABLE_FALLBACK = os.getenv("OLLAMA_ENABLE_FALLBACK", "True").lower() == "true"
 
@@ -228,13 +261,25 @@ OLLAMA_ENABLE_FALLBACK = os.getenv("OLLAMA_ENABLE_FALLBACK", "True").lower() == 
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
-AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
-AZURE_OPENAI_DEPLOYMENT_NAMES = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAMES", "gpt-4").split(",")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
+AZURE_OPENAI_DEPLOYMENT_NAMES = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAMES", "gpt-4o").split(",")
 AZURE_OPENAI_MAX_TOKENS = int(os.getenv("AZURE_OPENAI_MAX_TOKENS", "2000"))
 AZURE_OPENAI_TEMPERATURE = float(os.getenv("AZURE_OPENAI_TEMPERATURE", "0.7"))
+
+# Azure AI Inference Configuration
+AZURE_AI_ENDPOINT = os.getenv("AZURE_AI_ENDPOINT", "")
+AZURE_AI_API_KEY = os.getenv("AZURE_AI_API_KEY", "")
+AZURE_AI_API_VERSION = os.getenv("AZURE_AI_API_VERSION", "2024-05-01-preview")
+AZURE_AI_MODEL_NAMES = os.getenv("AZURE_AI_MODEL_NAMES", "Phi-4").split(",")
+AZURE_AI_MAX_TOKENS = int(os.getenv("AZURE_AI_MAX_TOKENS", "2048"))
+AZURE_AI_TEMPERATURE = float(os.getenv("AZURE_AI_TEMPERATURE", "0.8"))
+AZURE_AI_TOP_P = float(os.getenv("AZURE_AI_TOP_P", "0.1"))
+AZURE_AI_PRESENCE_PENALTY = float(os.getenv("AZURE_AI_PRESENCE_PENALTY", "0.0"))
+AZURE_AI_FREQUENCY_PENALTY = float(os.getenv("AZURE_AI_FREQUENCY_PENALTY", "0.0"))
 
 # LLM Backend Display Names
 LLM_BACKEND_DISPLAY_NAMES = {
     'ollama': os.getenv("LLM_OLLAMA_DISPLAY_NAME", "Ollama"),
     'azure_openai': os.getenv("LLM_AZURE_OPENAI_DISPLAY_NAME", "Azure OpenAI"),
+    'azure_ai': os.getenv("LLM_AZURE_AI_DISPLAY_NAME", "Azure AI"),
 }

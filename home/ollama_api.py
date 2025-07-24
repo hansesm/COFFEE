@@ -16,21 +16,36 @@ def get_fallback_headers():
         headers["Authorization"] = f"Bearer {settings.OLLAMA_FALLBACK_AUTH_TOKEN}"
     return headers 
 
-def get_client():
+def get_client(timeout=None):
     """
     Creates and returns an Ollama Client.
     It tries the primary host first and falls back to fallback host if necessary.
+    
+    Args:
+        timeout: Custom timeout in seconds. If None, uses OLLAMA_REQUEST_TIMEOUT setting.
     """
+    if timeout is None:
+        timeout = settings.OLLAMA_REQUEST_TIMEOUT
+        
     try:
+        # First try with a short timeout just for connection testing
+        test_client = Client(
+            host=settings.OLLAMA_PRIMARY_HOST,
+            headers=get_primary_headers(),
+            verify=settings.OLLAMA_PRIMARY_VERIFY_SSL,
+            timeout=5,  # Short timeout for connection test
+        )
+        # Lightweight operation here to verify connectivity
+        test_client.list()
+        logging.info("Connected to primary Ollama host: %s", settings.OLLAMA_PRIMARY_HOST)
+        
+        # Now create the actual client with proper timeout for operations
         client = Client(
             host=settings.OLLAMA_PRIMARY_HOST,
             headers=get_primary_headers(),
             verify=settings.OLLAMA_PRIMARY_VERIFY_SSL,
-            timeout=5,  # Shorter timeout for connection test
+            timeout=timeout,
         )
-        # Lightweight operation here to verify connectivity
-        client.list()
-        logging.info("Connected to primary Ollama host: %s", settings.OLLAMA_PRIMARY_HOST)
         return client
     except Exception as primary_error:
         logging.error("Primary host failed: %s", primary_error)
@@ -41,15 +56,23 @@ def get_client():
             raise primary_error
             
         try:
+            # Test fallback connection
+            test_client = Client(
+                host=settings.OLLAMA_FALLBACK_HOST,
+                headers=get_fallback_headers(),
+                verify=settings.OLLAMA_FALLBACK_VERIFY_SSL,
+                timeout=5,  # Short timeout for connection test
+            )
+            test_client.list()
+            logging.info("Connected to fallback Ollama host: %s", settings.OLLAMA_FALLBACK_HOST)
+            
+            # Create actual client with proper timeout
             client = Client(
                 host=settings.OLLAMA_FALLBACK_HOST,
                 headers=get_fallback_headers(),
                 verify=settings.OLLAMA_FALLBACK_VERIFY_SSL,
-                timeout=5,  # Shorter timeout for connection test
+                timeout=timeout,
             )
-            # Test fallback connection
-            client.list()
-            logging.info("Connected to fallback Ollama host: %s", settings.OLLAMA_FALLBACK_HOST)
             return client
         except Exception as fallback_error:
             logging.error("Fallback host also failed: %s", fallback_error)
@@ -85,25 +108,28 @@ def stream_chat_response(prompt, model=None):
 
 def list_models():
     """
-    Uses the Ollama Client to retrieve the list of available models.
-    The client is configured with a primary host and falls back to an alternative host if needed.
-    Returns a list of model names as strings (or an empty list in case of an error).
+    Returns the list of available Ollama models from configuration.
+    Uses hardcoded model names from settings for consistent and fast loading.
     """
     try:
-        client = get_client()
-        response = client.list()
-        logging.info("Retrieved models response: %s", response)
-        # Extract the list of models from the response.
-        # (Assuming the response contains an attribute 'models' with the list.)
-        models = response.models
-        # Build a list of model names.
-        model_names = [m.model for m in models]
-        logging.info("Available models: %s", model_names)
-        return model_names
+        from django.conf import settings
+        
+        model_names = getattr(settings, 'OLLAMA_MODEL_NAMES', 'phi4:latest')
+        
+        # Handle both string and list configurations
+        if isinstance(model_names, str):
+            model_names = [name.strip() for name in model_names.split(',')]
+        
+        # Filter out empty strings
+        model_list = [model.strip() for model in model_names if model.strip()]
+        
+        logging.info("Available Ollama models from configuration: %s", model_list)
+        return model_list
+        
     except Exception as e:
         logging.error("Error during listing models: %s", e)
-        # Re-raise the exception so the view can handle it properly
-        raise e
+        # Return default model as fallback
+        return ['phi4:latest']
 
 def get_ollama_config():
     """

@@ -11,3 +11,31 @@ env
 
 #src
 *.sqlite*
+
+# Personal deployment configurations
+configmap.yaml
+ingress.yaml
+deploy.sh
+deployment-app.yaml
+deployment-db.yaml
+pvc.yaml
+
+# Personal deployment directory
+/deployment/
+/k8s-personal/
+
+# Generated files
+models.dot
+*.dot
+
+# Environment files
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db

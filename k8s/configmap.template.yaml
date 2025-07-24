@@ -5,22 +5,22 @@ metadata:
   namespace: fbapp
 data:
   # Database Configuration
-  DATABASE_URL: "postgresql://dbuser:mNNzZMbC9dei65DtMz6s@feedback-app-postgres-service:5432/coffee"
+  DATABASE_URL: "postgresql://CHANGE_ME:CHANGE_ME@feedback-app-postgres-service:5432/CHANGE_ME"
   DB_ENGINE: "django.db.backends.postgresql"
-  DB_USERNAME: "dbuser"
-  DB_PASS: "mNNzZMbC9dei65DtMz6s"
+  DB_USERNAME: "CHANGE_ME"
+  DB_PASS: "CHANGE_ME"
   DB_HOST: "feedback-app-postgres-service"
   DB_PORT: "5432"
-  DB_NAME: "coffee"
-  POSTGRES_USER: "dbuser"
-  POSTGRES_PASSWORD: "mNNzZMbC9dei65DtMz6s"
-  POSTGRES_DB: "coffee"
+  DB_NAME: "CHANGE_ME"
+  POSTGRES_USER: "CHANGE_ME"
+  POSTGRES_PASSWORD: "CHANGE_ME"
+  POSTGRES_DB: "CHANGE_ME"
   
   # Django Configuration
-  SECRET_KEY: "&q8(b3s3$wiyc*lo4umj$vpdp6c197pn*2hqw=ritd$%sho-!)"
+  SECRET_KEY: "CHANGE_ME_TO_SECURE_SECRET_KEY"
   DEBUG: "FALSE"
   
-  # Ollama Configuration
+  # Ollama Configuration (Optional)
   OLLAMA_PRIMARY_HOST: "http://your-ollama-host:11434"
   OLLAMA_PRIMARY_AUTH_TOKEN: ""
   OLLAMA_PRIMARY_VERIFY_SSL: "False"
@@ -31,7 +31,7 @@ data:
   OLLAMA_REQUEST_TIMEOUT: "300"
   OLLAMA_ENABLE_FALLBACK: "False"
   
-  # Azure OpenAI Configuration
+  # Azure OpenAI Configuration (Optional)
   AZURE_OPENAI_API_VERSION: "2024-12-01-preview"
   AZURE_OPENAI_ENDPOINT: ""
   AZURE_OPENAI_API_KEY: ""
@@ -40,7 +40,7 @@ data:
   AZURE_OPENAI_MAX_TOKENS: "2000"
   AZURE_OPENAI_TEMPERATURE: "0.7"
   
-  # Azure AI Configuration
+  # Azure AI Configuration (Optional)
   AZURE_AI_ENDPOINT: ""
   AZURE_AI_API_KEY: ""
   AZURE_AI_API_VERSION: "2024-05-01-preview"

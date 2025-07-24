@@ -98,7 +98,7 @@ msgstr "Feedbacks"
 
 #: home/templates/includes/sidebar.html:62
 msgid "Analysis"
-msgstr ""
+msgstr "Analyse"
 
 #: home/templates/pages/account.html:5
 msgid "Account Information"
@@ -122,7 +122,7 @@ msgstr "Feedback Details"
 
 #: home/templates/pages/analysis.html:15 home/templates/pages/analysis.html:68
 msgid "Timestamp"
-msgstr ""
+msgstr "Zeitstempel"
 
 #: home/templates/pages/analysis.html:17 home/templates/pages/analysis.html:74
 msgid "Task Title"
@@ -473,10 +473,11 @@ msgid ""
 "<a href=\"/policies/\">Notes of Use</a> \n"
 "and confirm that you have read our <a href=\"/policies/\">Disclaimer</a>.\n"
 msgstr ""
+"\n"
 "Durch das Austauschen von Nachrichten mit COFFEE \n"
 "stimmst du unseren <a href=\"/policies/\">Nutzungshinweise</a> \n"
 "zu und bestätigst, dass du unseren <a href=\"/policies/\">Disclaimer</a> "
-"gelesen hast."
+"gelesen hast.\n"
 
 #: home/templates/pages/feedback.html:65
 msgid "How helpful was this feedback for you?"

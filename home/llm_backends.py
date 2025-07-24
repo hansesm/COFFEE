@@ -2,6 +2,7 @@ import logging
 from django.conf import settings
 from .ollama_api import list_models as list_ollama_models, stream_chat_response as stream_ollama_response
 from .azure_openai_api import list_azure_models, stream_azure_response
+from .azure_ai_api import list_azure_ai_models, stream_azure_ai_response
 
 def get_all_available_models():
     """
@@ -15,7 +16,8 @@ def get_all_available_models():
     # Get display names from settings
     display_names = getattr(settings, 'LLM_BACKEND_DISPLAY_NAMES', {
         'ollama': 'Ollama',
-        'azure_openai': 'Azure OpenAI'
+        'azure_openai': 'Azure OpenAI',
+        'azure_ai': 'Azure AI'
     })
     
     # Get Ollama models
@@ -44,6 +46,19 @@ def get_all_available_models():
     except Exception as e:
         logging.error(f"Failed to get Azure OpenAI models: {e}")
     
+    # Get Azure AI models
+    try:
+        azure_ai_models = list_azure_ai_models()
+        azure_ai_display_name = display_names.get('azure_ai', 'Azure AI')
+        for model in azure_ai_models:
+            all_models.append({
+                'name': model['name'],
+                'backend': 'azure_ai',
+                'display_name': f"{model['name']} ({azure_ai_display_name})"
+            })
+    except Exception as e:
+        logging.error(f"Failed to get Azure AI models: {e}")
+    
     logging.info(f"Found {len(all_models)} total models across all backends")
     return all_models
 
@@ -53,7 +68,7 @@ def stream_llm_response(model_name, backend, user_input, system_prompt):
     
     Args:
         model_name: Name of the model/deployment
-        backend: Backend type ('ollama' or 'azure_openai')
+        backend: Backend type ('ollama', 'azure_openai', or 'azure_ai')
         user_input: User's input text
         system_prompt: System prompt for the model
     
@@ -68,6 +83,9 @@ def stream_llm_response(model_name, backend, user_input, system_prompt):
         elif backend == 'azure_openai':
             logging.info(f"Streaming from Azure OpenAI deployment: {model_name}")
             yield from stream_azure_response(model_name, user_input, system_prompt)
+        elif backend == 'azure_ai':
+            logging.info(f"Streaming from Azure AI model: {model_name}")
+            yield from stream_azure_ai_response(model_name, user_input, system_prompt)
         else:
             error_msg = f"Unsupported backend: {backend}"
             logging.error(error_msg)
@@ -84,6 +102,7 @@ def parse_model_backend(llm_field):
     Expected formats:
     - "model_name::ollama" (explicit backend)
     - "model_name::azure_openai" (explicit backend)
+    - "model_name::azure_ai" (explicit backend)
     - "model_name" (defaults to ollama for backward compatibility)
     
     Args:

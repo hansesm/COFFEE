@@ -145,7 +145,6 @@ def feedback_stream(request, feedback_uuid, criteria_uuid):
 
     try:
         custom_prompt = criteria.prompt.replace("##submission##", user_input)
-        custom_prompt = custom_prompt.replace("##task##", task.description or "") #ToDo: remove this line because we added the task_description shortcut
         custom_prompt = custom_prompt.replace("##task_title##", task.title or "")
         custom_prompt = custom_prompt.replace("##task_description##", task.description or "")
         custom_prompt = custom_prompt.replace("##task_context##", task.task_context or "")
@@ -286,7 +285,11 @@ class CrudFeedbackView(ManagerRequiredMixin, View):
             active=True
         ).select_related('course').distinct()
 
-        # Add a helper JSON field for each feedback’s criteria
+        # Add a helper JSON field for each feedback's criteria - optimized to avoid N+1 queries
+        feedback_list = feedback_list.prefetch_related(
+            Prefetch('criteria_set', queryset=Criteria.objects.select_related()),
+            'feedbackcriteria_set__criteria'
+        )
         for fdb in feedback_list:
             fdb.criteria_set_json = fdb.get_criteria_set_json()
 
@@ -755,11 +758,11 @@ def save_feedback_session(request):
 
 class FeedbackSessionAnalysisView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # Filter sessions by course viewing permission (either through viewing_groups OR editing_groups)
+        # Filter sessions by course viewing permission with optimized query to avoid N+1 queries
         sessions = FeedbackSession.objects.filter(
             Q(course__viewing_groups__in=request.user.groups.all()) |
             Q(course__editing_groups__in=request.user.groups.all())
-        ).order_by('-timestamp').distinct()
+        ).select_related('course', 'feedback', 'feedback__task').order_by('-timestamp').distinct()
         
         session_data = []
         for session in sessions:
