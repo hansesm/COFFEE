@@ -86,6 +86,10 @@ Supports multiple AI backends:
 2. **Students**: Submit work and receive AI feedback
 3. **Analysis**: View feedback analytics and export data
 
+## Credits
+
+This project was developed with assistance from [Claude Code](https://claude.ai/code), Anthropic's AI coding assistant.
+
 ## License
 
 See LICENSE.md for details.
