@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: feedback-app-ingress
-  namespace: fbapp
+  name: coffee-dev-ingress
+  namespace: ns-coffee-dev
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -12,18 +12,18 @@ metadata:
 spec:
   ingressClassName: public
   rules:
-    - host: CHANGE_ME.local
+    - host: feedback-impact.fernuni-hagen.de
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: feedback-app-service
+                name: coffee-dev-service
                 port:
                   number: 8000
   # Uncomment for HTTPS/TLS
   # tls:
   #   - hosts:
-  #       - CHANGE_ME.local
-  #     secretName: coffee-tls-secret
+  #       - feedback-impact.fernuni-hagen.de
+  #     secretName: feedback-impact-tls

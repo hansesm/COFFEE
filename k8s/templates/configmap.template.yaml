@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: feedback-app-config
-  namespace: fbapp
+  name: coffee-dev-config
+  namespace: ns-coffee-dev
 data:
   # Database Configuration
-  DATABASE_URL: "postgresql://CHANGE_ME:CHANGE_ME@feedback-app-postgres-service:5432/CHANGE_ME"
+  DATABASE_URL: "postgresql://CHANGE_ME:CHANGE_ME@coffee-dev-postgres-service:5432/CHANGE_ME"
   DB_ENGINE: "django.db.backends.postgresql"
   DB_USERNAME: "CHANGE_ME"
   DB_PASS: "CHANGE_ME"
-  DB_HOST: "feedback-app-postgres-service"
+  DB_HOST: "coffee-dev-postgres-service"
   DB_PORT: "5432"
   DB_NAME: "CHANGE_ME"
   POSTGRES_USER: "CHANGE_ME"

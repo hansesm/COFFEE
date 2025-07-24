@@ -23,6 +23,7 @@ pvc.yaml
 # Personal deployment directory
 /deployment/
 /k8s-personal/
+/k8s/production/
 
 # Generated files
 models.dot

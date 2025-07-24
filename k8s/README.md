@@ -1,149 +1,152 @@
 # COFFEE Kubernetes Deployment
 
-This directory contains Kubernetes deployment templates for the COFFEE application.
+This directory contains Kubernetes deployment configurations for the COFFEE application organized into templates and production-ready configs.
 
-## Files Overview
+## Directory Structure
 
-- `configmap.template.yaml` - Configuration template (copy to `configmap.yaml` and customize)
-- `deployment-app.yaml` - Application deployment
-- `deployment-db.yaml` - PostgreSQL database deployment  
-- `pvc.yaml` - Persistent volume claim for database storage
-- `ingress.template.yaml` - Ingress template (copy to `ingress.yaml` and customize)
-- `deploy.template.sh` - Deployment script template (copy to `deploy.sh` and customize)
-
-## Quick Start
-
-### 1. Prerequisites
-
-For **microk8s**:
-```bash
-# Install microk8s
-sudo snap install microk8s --classic
-
-# Enable required addons
-microk8s enable dns storage ingress
-
-# Add user to microk8s group
-sudo usermod -a -G microk8s $USER
-sudo chown -f -R $USER ~/.kube
-newgrp microk8s
+```
+k8s/
+├── templates/          # Template files with placeholders
+│   ├── configmap.template.yaml
+│   ├── ingress.template.yaml
+│   └── deploy.template.sh
+└── production/         # Production-ready configurations
+    ├── configmap.yaml          # ⚠️ Contains secrets - customize before use
+    ├── deployment-app.yaml     # Application deployment
+    ├── deployment-db.yaml      # PostgreSQL database deployment
+    ├── ingress.yaml           # Ingress with feedback-impact.fernuni-hagen.de
+    └── pvc.yaml              # Persistent volume claim
 ```
 
-For **standard Kubernetes**: Ensure you have `kubectl` configured and an ingress controller installed.
+## Quick Deployment
 
-### 2. Setup Configuration
+### For Production (ns-coffee-dev)
+
+The production configs are ready for the `ns-coffee-dev` namespace:
 
 ```bash
-# Copy template files and customize
-cp configmap.template.yaml configmap.yaml
-cp ingress.template.yaml ingress.yaml
-cp deploy.template.sh deploy.sh
-chmod +x deploy.sh
+# 1. Create namespace
+kubectl create namespace ns-coffee-dev
 
-# Edit configuration files with your values
-vi configmap.yaml  # Update database credentials, API keys, etc.
-vi ingress.yaml    # Update hostname
-vi deploy.sh       # Update kubectl command and hostname
+# 2. Customize configuration (REQUIRED)
+vi k8s/production/configmap.yaml  # Update passwords, API keys, etc.
+
+# 3. Deploy all resources
+kubectl apply -f k8s/production/
 ```
 
-### 3. Deploy
+### For Custom Environment
+
+Use templates to create your own environment:
 
 ```bash
-# Run deployment
-./deploy.sh
+# 1. Copy templates
+cp k8s/templates/configmap.template.yaml my-configmap.yaml
+cp k8s/templates/ingress.template.yaml my-ingress.yaml
 
-# Add hostname to /etc/hosts (if using .local domain)
-echo "127.0.0.1 your-hostname.local" | sudo tee -a /etc/hosts
+# 2. Customize files
+vi my-configmap.yaml  # Replace CHANGE_ME placeholders
+vi my-ingress.yaml    # Update hostname
+
+# 3. Deploy
+kubectl apply -f my-configmap.yaml
+kubectl apply -f k8s/production/deployment-app.yaml
+kubectl apply -f k8s/production/deployment-db.yaml
+kubectl apply -f k8s/production/pvc.yaml
+kubectl apply -f my-ingress.yaml
 ```
 
 ## Configuration
 
-### Required Settings in configmap.yaml
+### Required Updates in configmap.yaml
 
-1. **Database**: Update PostgreSQL credentials
-2. **Django**: Set SECRET_KEY and DEBUG
-3. **Optional LLM Backends**:
-   - Ollama: Set host and models
-   - Azure OpenAI: Set endpoint and API key
-   - Azure AI: Set endpoint and API key
-
-### Example Local Development Setup
+**🚨 SECURITY**: Update these values before deployment:
 
 ```yaml
-# In configmap.yaml
 data:
-  POSTGRES_USER: "coffeeuser"
-  POSTGRES_PASSWORD: "secure-password-here"
-  POSTGRES_DB: "coffeedb"
-  SECRET_KEY: "your-very-secure-secret-key"
-  DEBUG: "FALSE"
-  OLLAMA_PRIMARY_HOST: "http://host.docker.internal:11434"  # For local Ollama
+  # Database - Change password
+  POSTGRES_PASSWORD: "CHANGE_DB_PASSWORD"
+  DB_PASS: "CHANGE_DB_PASSWORD"
+  
+  # Django - Generate secure key
+  SECRET_KEY: "CHANGE_ME_TO_SECURE_SECRET_KEY"
+  
+  # LLM Backends (Optional)
+  OLLAMA_PRIMARY_HOST: "http://your-ollama-host:11434"
+  AZURE_OPENAI_ENDPOINT: "https://your-openai.openai.azure.com/"
+  AZURE_OPENAI_API_KEY: "your-api-key"
+  AZURE_AI_ENDPOINT: "https://your-ai.inference.ai.azure.com"
+  AZURE_AI_API_KEY: "your-api-key"
 ```
 
-```yaml
-# In ingress.yaml
-spec:
-  rules:
-    - host: coffee.local
-```
+### Production Configuration (ns-coffee-dev)
+
+- **Namespace**: `ns-coffee-dev`
+- **Application**: `coffee-dev`
+- **URL**: `feedback-impact.fernuni-hagen.de`
+- **TLS Secret**: `feedback-impact-tls`
+- **Database**: `coffee_dev` with `coffee_user`
 
 ## Security Best Practices
 
-1. **Never commit personal configuration files** - they're gitignored
-2. **Use Kubernetes Secrets** for sensitive data in production:
+1. **Use Kubernetes Secrets** for sensitive data:
    ```bash
-   kubectl create secret generic coffee-secrets \
-     --from-literal=secret-key="your-secret" \
-     --from-literal=db-password="your-password" \
-     -n fbapp
+   kubectl create secret generic coffee-dev-secrets \
+     --from-literal=secret-key="$(openssl rand -base64 32)" \
+     --from-literal=db-password="$(openssl rand -base64 16)" \
+     --from-literal=azure-api-key="your-key" \
+     -n ns-coffee-dev
    ```
-3. **Use TLS** in production - uncomment TLS section in ingress
-4. **Limit resource usage** - adjust resource limits as needed
 
-## Troubleshooting
+2. **Enable TLS** - uncomment TLS section in ingress.yaml
+3. **Use specific image tags** instead of `:latest`
+4. **Set resource limits** for stability
 
-### Common Issues
-
-1. **Pod fails to start**: Check logs with `kubectl logs -f deployment/feedback-app-deployment -n fbapp`
-2. **Database connection fails**: Verify PostgreSQL pod is running and credentials match
-3. **Ingress not working**: Check ingress controller is installed and running
-4. **Permission denied**: Ensure proper RBAC permissions for your user
+## Monitoring & Troubleshooting
 
 ### Useful Commands
 
 ```bash
-# Check all resources
-kubectl get all -n fbapp
+# Check deployment status
+kubectl get all -n ns-coffee-dev
 
 # View application logs
-kubectl logs -f deployment/feedback-app-deployment -n fbapp
+kubectl logs -f deployment/coffee-dev-deployment -n ns-coffee-dev
 
-# View database logs
-kubectl logs -f deployment/feedback-app-postgres-deployment -n fbapp
+# View database logs  
+kubectl logs -f deployment/coffee-dev-postgres-deployment -n ns-coffee-dev
 
 # Access application shell
-kubectl exec -it deployment/feedback-app-deployment -n fbapp -- /bin/bash
+kubectl exec -it deployment/coffee-dev-deployment -n ns-coffee-dev -- /bin/bash
 
-# Port forward for direct access
-kubectl port-forward service/feedback-app-service 8000:8000 -n fbapp
-
-# Clean up
-kubectl delete namespace fbapp
+# Port forward for testing
+kubectl port-forward service/coffee-dev-service 8000:8000 -n ns-coffee-dev
 ```
 
-## Production Considerations
+### Common Issues
 
-1. **Use proper image tags** instead of `:latest`
-2. **Set up horizontal pod autoscaling**
-3. **Configure resource quotas**
-4. **Set up monitoring and logging**
-5. **Use external database** for better reliability
-6. **Configure backup strategy**
-7. **Set up SSL/TLS certificates**
+1. **ConfigMap not found**: Apply configmap.yaml first
+2. **Database connection fails**: Check PostgreSQL pod logs and credentials
+3. **Ingress not accessible**: Verify ingress controller and DNS setup
+4. **TLS certificate issues**: Check certificate creation and secret name
 
-## Alternative Deployment Options
+## Production Checklist
 
-1. **Helm Chart**: Consider creating a Helm chart for more complex deployments
-2. **Kustomize**: Use for environment-specific overlays
-3. **GitOps**: Use ArgoCD or Flux for continuous deployment
-4. **Docker Compose**: See project root for simpler containerized deployment
+- [ ] Updated all CHANGE_ME placeholders in configmap.yaml
+- [ ] Generated secure SECRET_KEY
+- [ ] Configured LLM backend credentials
+- [ ] Set up TLS certificate (feedback-impact-tls)
+- [ ] Configured resource limits and requests
+- [ ] Set up backup strategy for database
+- [ ] Configured monitoring and alerting
+- [ ] Tested deployment in staging environment
+
+## Clean Up
+
+```bash
+# Remove entire deployment
+kubectl delete namespace ns-coffee-dev
+
+# Remove specific resources
+kubectl delete -f k8s/production/
+```
