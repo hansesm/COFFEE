@@ -35,7 +35,7 @@ if not DEBUG:
 from django.utils.translation import gettext_lazy as _
 
 # Application Version
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.3"
 
 # Enable internationalization
 USE_I18N = True
