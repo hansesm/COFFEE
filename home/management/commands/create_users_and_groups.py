@@ -9,7 +9,7 @@ class Command(BaseCommand):
         # Create Superuser
         if not User.objects.filter(username="hansesm").exists():
             User.objects.create_superuser(
-                "hansesm", "admin@example.com", "Predator2602!"
+                "admin", "admin@example.com", "reverence-referee-lunchbox"
             )
             self.stdout.write(
                 self.style.SUCCESS('Superuser "admin" created successfully.')
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         # Create Normal User
         if not User.objects.filter(username="manager").exists():
             user = User.objects.create_user(
-                "manager", "user@example.com", "feedbackzentrum2024"
+                "manager", "user@example.com", "expediter-saline-untapped"
             )
             self.stdout.write(
                 self.style.SUCCESS('Normal user "manager" created successfully.')

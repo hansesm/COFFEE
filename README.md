@@ -80,6 +80,13 @@ Supports multiple AI backends:
 - **Ollama**: Local or remote Ollama instances with fallback support
 - **Azure OpenAI**: GPT-4, GPT-3.5-turbo deployments
 
+## Default Login Credentials
+
+After running `python manage.py create_users_and_groups`, use these credentials:
+
+- **Admin**: username `admin`, password `reverence-referee-lunchbox`
+- **Manager**: username `manager`, password `expediter-saline-untapped`
+
 ## Usage
 
 1. **Admin**: Create courses, tasks, and criteria at `/admin/`

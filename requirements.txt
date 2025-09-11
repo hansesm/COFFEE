@@ -10,3 +10,4 @@ reportlab
 openai
 dj-database-url
 azure-ai-inference
+pytz
