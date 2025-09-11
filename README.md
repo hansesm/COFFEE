@@ -74,6 +74,41 @@ docker build -t coffee .
 docker run -p 8000:8000 coffee
 ```
 
+## Podman Deployment (RedHat/RHEL)
+
+For RedHat Enterprise Linux systems using Podman:
+
+```bash
+# Install podman-compose if not already installed
+sudo dnf install podman-compose
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your actual configuration values
+
+# Deploy with podman-compose
+podman-compose -f podman-compose.yaml up -d
+
+# Create initial users and database schema
+podman exec -it coffee_app python manage.py migrate
+podman exec -it coffee_app python manage.py create_users_and_groups
+
+# Access the application
+curl http://localhost:8000
+```
+
+**Useful Podman commands:**
+```bash
+# View logs
+podman-compose logs -f coffee_app
+
+# Stop services
+podman-compose down
+
+# Rebuild and restart
+podman-compose up -d --build
+```
+
 ## LLM Backends
 
 Supports multiple AI backends:
