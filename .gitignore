@@ -39,4 +39,4 @@ models.dot
 *.swo
 
 # OS files
-Thumbs.db
+Thumbs.db.env
