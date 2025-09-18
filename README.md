@@ -2,14 +2,6 @@
 
 AI-powered feedback system for educational institutions using Django and Large Language Models.
 
-## Features
-
-- **AI Feedback**: Automated feedback using Ollama and Azure OpenAI
-- **Course & Task Management**: Create courses, assignments, and evaluation criteria
-- **Multi-language**: German and English support
-- **PDF Export**: Download feedback reports
-- **Group Permissions**: Role-based access control
-
 ## Quick Start
 
 1. **Clone and setup**
