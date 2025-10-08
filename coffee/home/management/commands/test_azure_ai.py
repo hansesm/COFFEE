@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
 import logging
-from home.azure_ai_api import get_azure_ai_client, list_azure_ai_models, generate_azure_ai_response
+from coffee.home.azure_ai_api import get_azure_ai_client, list_azure_ai_models, generate_azure_ai_response
 
 logger = logging.getLogger(__name__)
 

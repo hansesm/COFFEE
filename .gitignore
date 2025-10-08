@@ -7,9 +7,9 @@
 /node_modules/
 build/
 env
-/staticfiles/
+/coffee/staticfiles/
 
-#src
+#coffee
 *.sqlite*
 
 # Personal deployment configurations
@@ -40,3 +40,4 @@ models.dot
 
 # OS files
 Thumbs.db.env
+TODOS.md

@@ -1,0 +1,64 @@
+[project]
+name = "coffee"
+version = "0.1.0"
+description = "AI-powered feedback system for educational institutions using Django and Large Language Models."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "annotated-types==0.7.0",
+    "anyio==4.11.0",
+    "asgiref==3.10.0",
+    "azure-ai-inference==1.0.0b9",
+    "azure-core==1.35.1",
+    "certifi==2025.10.5",
+    "charset-normalizer==3.4.3",
+    "distro==1.9.0",
+    "dj-database-url==3.0.1",
+    "django==5.2.7",
+    "django-extensions==4.1",
+    "gunicorn==23.0.0",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "idna==3.10",
+    "isodate==0.7.2",
+    "jiter==0.11.0",
+    "ollama==0.6.0",
+    "openai==2.2.0",
+    "packaging==25.0",
+    "pillow==11.3.0",
+    "psycopg2-binary==2.9.10",
+    "pydantic==2.11.10",
+    "pydantic-core==2.33.2",
+    "python-dotenv==1.1.1",
+    "pytz==2025.2",
+    "reportlab==4.4.4",
+    "requests==2.32.5",
+    "six==1.17.0",
+    "sniffio==1.3.1",
+    "sqlparse==0.5.3",
+    "tqdm==4.67.1",
+    "typing-extensions==4.15.0",
+    "typing-inspection==0.4.2",
+    "urllib3==2.5.0",
+    "whitenoise==6.11.0",
+]
+
+[dependency-groups]
+dev = [
+    "taskipy>=1.14.1",
+]
+
+
+[tool.taskipy.tasks]
+migrate = "python manage.py migrate"
+create-groups = "python manage.py create_users_and_groups"
+server = "python manage.py runserver"
+import-demo-data = "python manage.py create_demo_data"
+test = "python manage.py test --pattern=\"tests_*.py\""
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+py-modules = ['coffee']

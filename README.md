@@ -2,32 +2,41 @@
 
 AI-powered feedback system for educational institutions using Django and Large Language Models.
 
-## Quick Start
+## Getting Started
 
-1. **Clone and setup**
+1. **Prerequisites**
+- Install [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
+
+2. **Clone and setup**
    ```bash
    git clone <repository-url>
    cd COFFEE
-   python3 -m venv venv && source venv/bin/activate
-   pip install -r requirements.txt
+   uv venv --python 3.13
+   uv sync
    ```
 
-2. **Configure environment**
+3. **Configure environment**
    ```bash
    cp .env.example .env
    # Edit .env with your settings
    ```
 
-3. **Setup database**
+5. **Setup database**
    ```bash
-   python manage.py migrate
-   python manage.py create_users_and_groups
+   uv run task migrate
+   uv run task create-groups
    ```
 
-4. **Run**
+6. **Run**
    ```bash
-   python manage.py runserver
+   uv run task server
    ```
+
+## Populate Database with Demo Data
+
+```bash
+uv run task import-demo-data
+```
 
 ## Configuration
 
