@@ -6,6 +6,7 @@ AI-powered feedback system for educational institutions using Django and Large L
 
 1. **Prerequisites**
 - Install [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
+- Install [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
 
 2. **Clone and setup**
    ```bash
@@ -22,7 +23,15 @@ AI-powered feedback system for educational institutions using Django and Large L
    ```
 
 5. **Setup database**
+   Without the env variable `DATABASE_URL` django creates a sqlite database:
+   ```bash 
+   uv run task migrate
+   uv run task create-groups
+   ```
+   
+   If you want to use a PostgreSQL database, you can spin it up with Docker Compose:
    ```bash
+   docker compose up -d 
    uv run task migrate
    uv run task create-groups
    ```
@@ -32,7 +41,7 @@ AI-powered feedback system for educational institutions using Django and Large L
    uv run task server
    ```
 
-## Populate Database with Demo Data
+### Optional: Populate Database with Demo Data
 
 ```bash
 uv run task import-demo-data
