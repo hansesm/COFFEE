@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: coffee_db
+    restart: always
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: coffee
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
