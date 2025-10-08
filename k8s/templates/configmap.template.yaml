@@ -12,9 +12,6 @@ data:
   DB_HOST: "coffee-dev-postgres-service"
   DB_PORT: "${DB_PORT}"
   DB_NAME: "${DB_NAME}"
-  POSTGRES_USER: "${POSTGRES_USER}"
-  POSTGRES_PASSWORD: "${DB_PASSWORD}"
-  POSTGRES_DB: "${POSTGRES_DB}"
   
   # Django Configuration
   SECRET_KEY: "${SECRET_KEY}"
