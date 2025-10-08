@@ -41,6 +41,7 @@ dependencies = [
     "typing-extensions==4.15.0",
     "typing-inspection==0.4.2",
     "urllib3==2.5.0",
+    "uvicorn>=0.37.0",
     "whitenoise==6.11.0",
 ]
 
@@ -53,7 +54,10 @@ dev = [
 [tool.taskipy.tasks]
 migrate = "python manage.py migrate"
 create-groups = "python manage.py create_users_and_groups"
-server = "python manage.py runserver"
+collect-static = "python manage.py collectstatic --noinput"
+server = "uvicorn coffee.core.asgi:application --reload"
+prod-like = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.dev.py --worker-class uvicorn.workers.UvicornWorker"
+prod = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.prod.py --worker-class uvicorn.workers.UvicornWorker"
 import-demo-data = "python manage.py create_demo_data"
 test = "python manage.py test --pattern=\"tests_*.py\""
 

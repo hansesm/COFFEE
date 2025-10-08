@@ -81,7 +81,7 @@ LLM_AZURE_OPENAI_DISPLAY_NAME=FernUni
 
 ```bash
 docker build -t coffee .
-docker run -p 8000:8000 coffee
+docker run -p 8000:8000 --env-file .env coffee #On Windows add '--network host'  
 ```
 
 ## Podman Deployment (RedHat/RHEL)
