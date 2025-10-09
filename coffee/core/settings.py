@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 import os, random, string
 from pathlib import Path
+from urllib.parse import quote_plus
+
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables from .env.
@@ -160,7 +162,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "coffee.core.wsgi.application"
+WSGI_APPLICATION = "coffee.core.asgi.application"
 
 
 # Database
@@ -168,10 +170,33 @@ WSGI_APPLICATION = "coffee.core.wsgi.application"
 
 import dj_database_url
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
+DB_PROTOCOL = os.getenv("DB_PROTOCOL", "sqlite")
+DB_USERNAME = os.getenv("DB_USERNAME", "")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST     = os.getenv("DB_HOST", "")
+DB_PORT     = os.getenv("DB_PORT", "")
+DB_NAME     = os.getenv("DB_NAME", "")
+
+
+def build_database_url() -> str:
+    """
+    Baut eine DATABASE_URL aus Einzelteilen und encodet sensible Felder.
+    """
+    if not DB_NAME:
+        return ""
+
+    user = quote_plus(DB_USERNAME) if DB_USERNAME else ""
+    pwd  = quote_plus(DB_PASSWORD) if DB_PASSWORD else ""
+    auth = f"{user}:{pwd}@" if user or pwd else ""
+    host = DB_HOST or "localhost"
+    port = f":{DB_PORT}" if DB_PORT else ""
+    db   = quote_plus(DB_NAME)
+
+    return f"{DB_PROTOCOL}://{auth}{host}{port}/{db}"
+
+if DB_PROTOCOL != "sqlite":
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        'default': dj_database_url.parse(build_database_url())
     }
 else:
     DATABASES = {
