@@ -65,10 +65,10 @@ jobs:
             uv-${{ env.PYTHON_VERSION }}-
       - name: Sync deps
         run: uv sync --all-extras --dev
-      - name: Django checks & Tests
-        run: |
-          uv run task check 
-          uv run task test
+      - name: Django checks
+        run: uv run task check
+      - name: Django tests
+        run: uv run task test
 
   docker:
     needs: [build, test]
