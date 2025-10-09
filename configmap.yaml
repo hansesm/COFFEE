@@ -8,13 +8,10 @@ data:
   DATABASE_URL: "postgresql://dbuser:mNNzZMbC9dei65DtMz6s@feedback-app-postgres-service:5432/coffee"
   DB_ENGINE: "django.db.backends.postgresql"
   DB_USERNAME: "dbuser"
-  DB_PASS: "mNNzZMbC9dei65DtMz6s"
+  DB_PASSWORD: "mNNzZMbC9dei65DtMz6s"
   DB_HOST: "feedback-app-postgres-service"
   DB_PORT: "5432"
   DB_NAME: "coffee"
-  POSTGRES_USER: "dbuser"
-  POSTGRES_PASSWORD: "mNNzZMbC9dei65DtMz6s"
-  POSTGRES_DB: "coffee"
   
   # Django Configuration
   SECRET_KEY: "&q8(b3s3$wiyc*lo4umj$vpdp6c197pn*2hqw=ritd$%sho-!)"

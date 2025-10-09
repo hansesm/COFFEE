@@ -65,8 +65,7 @@ kubectl apply -f my-ingress.yaml
 ```yaml
 data:
   # Database - Change password
-  POSTGRES_PASSWORD: "CHANGE_DB_PASSWORD"
-  DB_PASS: "CHANGE_DB_PASSWORD"
+  DB_PASSWORD: "CHANGE_DB_PASSWORD"
   
   # Django - Generate secure key
   SECRET_KEY: "CHANGE_ME_TO_SECURE_SECRET_KEY"
