@@ -73,6 +73,7 @@ jobs:
   docker:
     needs: [build, test]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/') && (github.ref_name == 'main' || github.ref_name == 'dev')
     permissions:
       contents: read
       packages: write
