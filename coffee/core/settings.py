@@ -63,7 +63,7 @@ LOGGING = {
             'level': LOG_LEVEL,
             'propagate': False,
         },
-        'home': {
+        'coffee.home': {
             'handlers': ['console'],
             'level': LOG_LEVEL,
             'propagate': False,
@@ -122,7 +122,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
-    "home",
+    "coffee.home",
 ]
 
 MIDDLEWARE = [
@@ -137,7 +137,7 @@ MIDDLEWARE = [
     "django.middleware.locale.LocaleMiddleware",
 ]
 
-ROOT_URLCONF = "core.urls"
+ROOT_URLCONF = "coffee.core.urls"
 
 HOME_TEMPLATES = os.path.join(BASE_DIR, "home", "templates")
 
@@ -152,15 +152,15 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "home.context_processors.add_is_manager",
-                "home.context_processors.app_version",
+                "coffee.home.context_processors.add_is_manager",
+                "coffee.home.context_processors.app_version",
                 "django.template.context_processors.i18n",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "core.wsgi.application"
+WSGI_APPLICATION = "coffee.core.wsgi.application"
 
 
 # Database
@@ -177,7 +177,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": BASE_DIR.parent / "db.sqlite3",
         }
     }
 

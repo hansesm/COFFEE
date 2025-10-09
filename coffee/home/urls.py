@@ -2,18 +2,14 @@ from django.urls import path
 from . import views
 from .views import (
     CrudCourseView,
-    CrudTaskView,
     CrudCriteriaView,
-    CrudFeedbackView,
     FeedbackListView,
     FeedbackSessionCSVView,
     policies,
     save_feedback_session,
-    FetchRelatedDataView,
-    FeedbackSessionAnalysisView
+    FetchRelatedDataView
 )
 from django.contrib.auth import views as auth_views
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf.urls import include
 from django.views.generic import TemplateView
 

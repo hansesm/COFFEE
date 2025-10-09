@@ -1,8 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User, Group
 from django.db import transaction
-from home.models import Course, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession
-import uuid
+from coffee.home.models import Course, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession
 from django.utils import timezone
 
 
@@ -37,7 +36,7 @@ class Command(BaseCommand):
         self.stdout.write('Clearing existing demo data...')
         
         # Delete in proper order to handle protected foreign keys
-        from home.models import FeedbackSession, FeedbackCriteria, Feedback, Task, Criteria
+        from coffee.home.models import FeedbackSession, FeedbackCriteria, Feedback, Task, Criteria
         
         # Delete feedback sessions first
         demo_courses = Course.objects.filter(course_name__startswith='Demo Course')
