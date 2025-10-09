@@ -60,6 +60,7 @@ prod-like = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.dev.py 
 prod = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.prod.py --worker-class uvicorn.workers.UvicornWorker"
 import-demo-data = "python manage.py create_demo_data"
 test = "python manage.py test --pattern=\"tests_*.py\""
+check = "python manage.py check"
 
 [tool.uv]
 package = true

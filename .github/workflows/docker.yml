@@ -1,8 +1,8 @@
-name: Build and Push Docker Image
+name: Build, Test and Push COFFEE Artifact
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev, feat/github-workflows ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -13,7 +13,65 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/coffee
 
 jobs:
-  build-and-push:
+  build:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Python version
+        id: python-version
+        run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_ENV
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up Python ${{ env.PYTHON_VERSION }} via uv
+        run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ env.PYTHON_VERSION }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+          restore-keys: |
+            uv-${{ env.PYTHON_VERSION }}-
+      - name: Sync deps
+        run: uv sync --all-extras --dev
+      - name: Build
+        run: uv build
+  test:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Python version
+        id: python-version
+        run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_ENV
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up Python ${{ env.PYTHON_VERSION }} via uv
+        run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ env.PYTHON_VERSION }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+          restore-keys: |
+            uv-${{ env.PYTHON_VERSION }}-
+      - name: Sync deps
+        run: uv sync --all-extras --dev
+      - name: Django checks & Tests
+        run: |
+          uv run task check 
+          uv run task test
+
+  docker:
+    needs: [build, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,7 +79,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -48,7 +106,7 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         platforms: linux/amd64,linux/arm64
@@ -60,11 +118,14 @@ jobs:
 
     - name: Run security scan
       if: github.event_name != 'pull_request'
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@0.28.0
       with:
         image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
 
     - name: Upload Trivy scan results to GitHub Security tab
       if: github.event_name != 'pull_request'
