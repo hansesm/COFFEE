@@ -140,13 +140,13 @@ jobs:
           if [ "${GITHUB_REF_NAME}" = "dev" ]; then
             echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}-dev" >> $GITHUB_OUTPUT
           else
-            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" >> $GITHUB_OUTPUT
           fi
       - name: Run security scan
         if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.tags }}
+          image-ref: ${{ steps.tags.outputs.tags }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
