@@ -1,8 +1,8 @@
-name: Build and Push Docker Image
+name: Build, Test and Push COFFEE Artifact
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev, feat/github-workflows ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -13,15 +13,89 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/coffee
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Python version
+        id: python-version
+        run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_ENV
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up Python ${{ env.PYTHON_VERSION }} via uv
+        run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ env.PYTHON_VERSION }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+          restore-keys: |
+            uv-${{ env.PYTHON_VERSION }}-
+      - name: Sync deps
+        run: uv sync --all-extras --dev
+      - name: Build
+        run: uv build
+  test:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Python version
+        id: python-version
+        run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_ENV
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up Python ${{ env.PYTHON_VERSION }} via uv
+        run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ env.PYTHON_VERSION }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+          restore-keys: |
+            uv-${{ env.PYTHON_VERSION }}-
+      - name: Sync deps
+        run: uv sync --all-extras --dev
+      - name: Django checks
+        run: uv run task check
+      - name: Django tests
+        run: uv run task test
+
+  docker:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/') && (github.ref_name == 'main' || github.ref_name == 'dev')
     permissions:
       contents: read
       packages: write
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Read project version via uv
+      id: version
+      run: echo "VERSION=$(uv version --short)" >> $GITHUB_ENV
+    - name: Compute image tags
+      id: tags
+      run: |
+        if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+          echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}-dev" >> $GITHUB_OUTPUT
+        else
+          echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+        fi
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -34,40 +108,53 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable={{is_default_branch}}
-
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         platforms: linux/amd64,linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.tags.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Run security scan
-      if: github.event_name != 'pull_request'
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+  scan:
+    needs: [ docker ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Read project version via uv
+        id: version
+        run: echo "VERSION=$(uv version --short)" >> $GITHUB_ENV
+      - name: Compute image tags
+        id: tags
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}-dev" >> $GITHUB_OUTPUT
+          else
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+          fi
+      - name: Run security scan
+        if: github.event_name != 'pull_request'
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:{steps.tags.outputs.tags}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      if: github.event_name != 'pull_request'
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
