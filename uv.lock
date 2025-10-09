@@ -115,7 +115,7 @@ wheels = [
 
 [[package]]
 name = "coffee"
-version = "0.1.0"
+version = "1.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "annotated-types" },
