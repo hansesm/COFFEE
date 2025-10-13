@@ -14,7 +14,7 @@ from coffee.home.models import (
     Feedback,
     FeedbackCriteria,
 )
-from coffee.home.ollama_api import stream_chat_response
+from coffee.home.ai_provider.ollama_api import stream_chat_response
 
 
 def feedback(request, id):

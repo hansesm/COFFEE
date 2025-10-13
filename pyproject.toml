@@ -52,6 +52,7 @@ dev = [
 
 
 [tool.taskipy.tasks]
+makemigrate = "python manage.py makemigrations"
 migrate = "python manage.py migrate"
 create-groups = "python manage.py create_users_and_groups"
 collect-static = "python manage.py collectstatic --noinput"

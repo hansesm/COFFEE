@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from coffee.home.ollama_api import get_ollama_config, get_client, list_models
+from coffee.home.ai_provider.ollama_api import get_ollama_config, get_client, list_models
 
 
 class Command(BaseCommand):
