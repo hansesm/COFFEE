@@ -2,12 +2,11 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User, Group
 from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import json
-import uuid
 
-from .models import Course, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession
-from .forms import CourseForm, TaskForm, FeedbackSessionForm
+from coffee.home.models import Course, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession
+from coffee.home.forms import CourseForm, TaskForm, FeedbackSessionForm
 
 
 class CourseModelTest(TestCase):
@@ -59,7 +58,7 @@ class CourseModelTest(TestCase):
         self.assertFalse(self.course.can_view(other_user))
 
     def test_default_course_creation(self):
-        from .models import get_default_course
+        from coffee.home.models import get_default_course
         default_course_id = get_default_course()
         default_course = Course.objects.get(id=default_course_id)
         self.assertEqual(default_course.course_name, "#Sample course")
@@ -334,7 +333,7 @@ class ViewsTest(TestCase):
             nps_score="8"
         ).exists())
 
-    @patch('home.views.stream_chat_response')
+    @patch('coffee.home.views.stream_chat_response')
     def test_feedback_stream_view(self, mock_stream):
         mock_stream.return_value = iter(["Test", " response"])
         
@@ -500,7 +499,7 @@ class PermissionTest(TestCase):
         self.course.viewing_groups.add(self.group1)
 
     def test_permission_check_with_edit_access(self):
-        from .views import check_permissions_and_group
+        from coffee.home.views import check_permissions_and_group
         
         # Add required permission
         from django.contrib.auth.models import Permission
@@ -517,7 +516,7 @@ class PermissionTest(TestCase):
         self.assertIsNone(error)
 
     def test_permission_check_without_group_access(self):
-        from .views import check_permissions_and_group
+        from coffee.home.views import check_permissions_and_group
         
         # Add required permission
         from django.contrib.auth.models import Permission
@@ -621,7 +620,7 @@ class IntegrationTest(TestCase):
 
 class OllamaConfigTest(TestCase):
     def test_ollama_config_function(self):
-        from .ollama_api import get_ollama_config
+        from coffee.home.ai_provider.ollama_api import get_ollama_config
         
         config = get_ollama_config()
         
@@ -645,7 +644,7 @@ class OllamaConfigTest(TestCase):
         self.assertIsInstance(config['has_fallback_auth'], bool)
 
     def test_ollama_headers(self):
-        from .ollama_api import get_primary_headers, get_fallback_headers
+        from coffee.home.ai_provider.ollama_api import get_primary_headers, get_fallback_headers
         
         primary_headers = get_primary_headers()
         fallback_headers = get_fallback_headers()
@@ -656,9 +655,9 @@ class OllamaConfigTest(TestCase):
         self.assertEqual(primary_headers['Content-Type'], 'application/json')
         self.assertEqual(fallback_headers['Content-Type'], 'application/json')
 
-    @patch('home.ollama_api.Client')
+    @patch('coffee.ai_provider.ollama_api.Client')
     def test_get_client_with_settings(self, mock_client):
-        from .ollama_api import get_client
+        from coffee.home.ai_provider.ollama_api import get_client
         from django.conf import settings
         
         # Mock the client.list() method to avoid actual API calls

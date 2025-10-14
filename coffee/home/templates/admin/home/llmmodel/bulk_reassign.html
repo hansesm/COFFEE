@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+  <p>
+    {% blocktrans %}There are currently {{ affected_count }} criteria linked to "{{ original }}".{% endblocktrans %}
+  </p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <fieldset class="module aligned">
+      {{ form.as_p }}
+    </fieldset>
+    <div class="submit-row">
+      <a href="{% url 'admin:home_llmmodel_change' original.pk %}" class="deletelink">
+        {% trans "Cancel" %}
+      </a>
+      <input type="submit" class="default" value="Change"/>
+    </div>
+  </form>
+{% endblock %}

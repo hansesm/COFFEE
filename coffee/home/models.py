@@ -1,10 +1,15 @@
-import uuid
-from django.db import models
-from django.core.serializers import serialize
 import json
-from django.core.serializers.json import DjangoJSONEncoder
-from django.utils import timezone
+import uuid
+
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db import models, transaction
+from django.utils import timezone
+
+from coffee.home.security.encryption import EncryptedTextField
+from coffee.home.registry import ProviderType
+from coffee.home.validations import validate_config_for_type
 
 
 def get_default_course():
@@ -22,6 +27,19 @@ def get_default_course():
         }
     )[0].id
 
+
+def get_default_llm():
+    provider, _ = LLMProvider.objects.get_or_create(
+        name="Default", defaults={"type": ProviderType.OLLAMA, "config": {}, "endpoint": "", "is_active": True}
+    )
+    llm, _ = LLMModel.objects.get_or_create(
+        provider=provider,
+        external_name="phi-4",
+        defaults={"name": "phi-4", "default_params": {}, "is_active": False},
+    )
+    return llm.id
+
+
 class Course(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     faculty = models.CharField(max_length=250, db_index=True)  # Indexed for filtering
@@ -34,7 +52,7 @@ class Course(models.Model):
     course_context = models.TextField(null=True, blank=True, max_length=65535)
     editing_groups = models.ManyToManyField(Group, related_name="editable_courses", blank=True)
     viewing_groups = models.ManyToManyField(Group, related_name="viewable_courses", blank=True)
-    
+
     def can_edit(self, user):
         # Check if user is in any group that can edit
         return self.editing_groups.filter(pk__in=user.groups.all()).exists()
@@ -42,7 +60,7 @@ class Course(models.Model):
     def can_view(self, user):
         # user can view if they can edit OR their group is in viewing_groups
         return self.can_edit(user) or self.viewing_groups.filter(pk__in=user.groups.all()).exists()
-    
+
     class Meta:
         ordering = ["faculty"]
         verbose_name = "Course"
@@ -81,13 +99,137 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+class LLMProvider(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    type = models.CharField(max_length=32, choices=ProviderType.choices)
+
+    # Configuration (validated via Pydantic)
+    config = models.JSONField(default=dict, blank=True)
+
+    # Encrypted API Key
+    api_key = EncryptedTextField(blank=True, default="")
+    endpoint = models.URLField(blank=True, default="")
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "LLM Provider"
+        verbose_name_plural = "LLM Providers"
+        db_table = "home_provider"
+        indexes = [
+            models.Index(fields=["type", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name}"
+
+    def clean(self):
+        try:
+            validate_config_for_type(self.type, self.config)
+        except ValueError as e:
+            raise ValidationError({"config": str(e)})
+
+        errors = {}
+        if self.type in [ProviderType.AZURE_OPENAI, ProviderType.AZURE_AI]:
+            if not self.endpoint:
+                errors["endpoint"] = "Endpoint ist erforderlich."
+            if not self.api_key:
+                errors["api_key"] = "API-Key ist erforderlich."
+        elif self.type == ProviderType.OLLAMA:
+            # Meist nur ein lokaler Endpoint, kein Key erforderlich
+            if not self.endpoint:
+                errors["endpoint"] = "Base-URL/Endpoint ist erforderlich (z. B. http://localhost:11434)."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class LLMModel(models.Model):
+    """
+    Konfigurierbares Sprachmodell eines Providers.
+    Beispiel:
+      - external_name: "gpt-4o-mini" (oder "Meta-Llama-3.1-70B")
+      - deployment_name: bei Azure-OpenAI der konkrete Deployment-Name
+    """
+
+    provider = models.ForeignKey(
+        LLMProvider,
+        on_delete=models.PROTECT,
+        related_name="llm_models",
+    )
+
+    # Anzeigename intern (frei wählbar)
+    name = models.CharField(max_length=100)
+
+    # Externer Modell-Identifikator (z. B. "gpt-4o", "gpt-4o-mini", "mistral-large")
+    external_name = models.CharField(max_length=200)
+
+    # Default-Parameter, die beim Aufruf genutzt werden können (temperature, top_p, max_tokens, etc.)
+    default_params = models.JSONField(default=dict, blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    is_default = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            # Save to obtain primary key
+            super().save(*args, **kwargs)
+            if self.is_default:
+                # Reset other default model
+                (self.__class__.objects
+                 .exclude(pk=self.pk)
+                 .filter(is_default=True)
+                 .update(is_default=False))
+
+    class Meta:
+        verbose_name = "LLM Model"
+        verbose_name_plural = "LLM Models"
+        models.UniqueConstraint(fields=["provider", "external_name"], name="unique_provider_external-name")
+        indexes = [
+            models.Index(fields=["provider", "is_active"]),
+            models.Index(fields=["external_name"]),
+        ]
+
+    def __str__(self):
+        return f"{self.provider.name}: {self.name} [{self.external_name}]"
+
+    def clean(self):
+        """
+        Typabhängige Minimal-Validierung:
+        - Azure OpenAI/Azure AI: Deployment-Name sinnvollerweise Pflicht
+        - Ollama: external_name Pflicht (z. B. 'llama3:8b'), deployment optional
+        """
+        errors = {}
+
+        # immer: external_name erforderlich
+        if not self.external_name:
+            errors["external_name"] = "Externer Modellname ist erforderlich."
+
+        if errors:
+            raise ValidationError(errors)
 
 class Criteria(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=250, db_index=True)  # Indexed for searching
     description = models.TextField(null=True, blank=True)
     active = models.BooleanField(default=True, db_index=True)  # Indexed for filtering
-    llm = models.TextField(null=True, blank=True)
+    llm = models.TextField(null=True, blank=True, help_text="Deprecated")
+    llm_fk = models.ForeignKey(
+        LLMModel,
+        on_delete=models.RESTRICT,
+        related_name="llm",
+        null=True, blank=True
+    )
     prompt = models.TextField()
     sequels = models.JSONField(null=True, blank=True, default=dict)
     tag = models.CharField(max_length=250, null=True, blank=True, db_index=True)  # Indexed for filtering by tag
@@ -118,7 +260,7 @@ class Feedback(models.Model):
 
     # This still allows referencing the Course (distinct from the Task's Course if needed)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, db_index=True)  # Indexed for foreign key lookups
-    
+
     criteria_set = models.ManyToManyField(Criteria, through="FeedbackCriteria")
 
     class Meta:
@@ -148,7 +290,7 @@ class FeedbackCriteria(models.Model):
 
     class Meta:
         ordering = ["rank"]
-        unique_together = [["feedback", "criteria"]]
+        models.UniqueConstraint(fields=["feedback", "criteria"], name="unique_feedback_criteria")
         verbose_name = "Feedback Criteria"
         verbose_name_plural = "Feedback Criteria"
         indexes = [
@@ -165,11 +307,13 @@ class FeedbackSession(models.Model):
     session_key = models.TextField(null=True, blank=True, db_index=True)  # Indexed for session lookups
     staff_user = models.TextField(null=True, blank=True, db_index=True)  # Indexed for staff filtering
     submission = models.TextField()
-    feedback_data = models.JSONField(default=dict)  
+    feedback_data = models.JSONField(default=dict)
     nps_score = models.CharField(max_length=10, blank=True, null=True)
-    feedback = models.ForeignKey(Feedback, null=True, blank=True, on_delete=models.SET_NULL, db_index=True)  # Indexed for foreign key lookups
+    feedback = models.ForeignKey(Feedback, null=True, blank=True, on_delete=models.SET_NULL,
+                                 db_index=True)  # Indexed for foreign key lookups
     # This still allows referencing the Course (distinct from the Feedbacks Course if needed)
-    course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL, db_index=True)  # Indexed for foreign key lookups
+    course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL,
+                               db_index=True)  # Indexed for foreign key lookups
 
     class Meta:
         ordering = ["-timestamp"]  # Most recent first
@@ -180,4 +324,3 @@ class FeedbackSession(models.Model):
 
     def __str__(self):
         return f"Session {self.id} at {self.timestamp}"
-
