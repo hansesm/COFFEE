@@ -97,16 +97,34 @@ class LLMProviderAdminForm(forms.ModelForm):
 
         return cleaned
 
+class ProviderModelsInline(admin.TabularInline):
+    model = LLMModel
+    fields = ("name_link", "external_name", "is_default", "is_active")
+    readonly_fields = ("name_link", "external_name", "is_default", "is_active")
+    extra = 0
+    show_change_link = True
+    can_delete = False
+
+    @admin.display(description="Name")
+    def name_link(self, obj):
+        if not obj.pk:
+            return "-"
+        url = reverse("admin:home_llmmodel_change", args=[obj.pk])
+        return format_html('<a href="{}">{}</a>', url, obj.name)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(LLMProvider)
 class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     form = LLMProviderAdminForm
-    list_display = ("name", "type", "is_active", "updated_at")
+    list_display = ("name", "type", "is_active", "models_count_link", "updated_at")
     list_filter = ("type", "is_active")
     search_fields = ("name", "endpoint")
+    inlines = [ProviderModelsInline]
 
     def get_fields(self, request, obj=None):
-        # Reihenfolge inklusive readonly-Felder
         return [
             "name",
             "type",
@@ -115,6 +133,16 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
             "is_active",
             "config"
         ]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(_models_count=Count("llm_models", distinct=True))
+
+    @admin.display(ordering="_models_count", description="LLM Models")
+    def models_count_link(self, obj):
+        count = getattr(obj, "_models_count", 0)
+        url = reverse("admin:home_llmmodel_changelist") + f"?provider__id__exact={obj.id}"
+        return format_html('<a href="{}">{}</a>', url, count)
 
 
 class CriteriaInline(admin.TabularInline):
