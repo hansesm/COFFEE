@@ -1,18 +1,18 @@
-from django.db.models import Count
-from django.contrib import admin, messages
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Count
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.utils.html import format_html
 from django import forms
-from ollama import Client
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Count
+from django.shortcuts import redirect, render, get_object_or_404
+from django.urls import reverse, path
+from django.utils.html import format_html
 
-from coffee.home.models import LLMModel, ProviderType
-from coffee.home.models import Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, Course, Provider
+from coffee.home.ai_provider.configs import OllamaConfig, AzureAIConfig
+from coffee.home.models import LLMModel, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, \
+    Course, Provider
 from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
+from coffee.home.registry import SCHEMA_REGISTRY
 
-# Register your models here.
 admin.site.register(Task)
 admin.site.register(Criteria)
 admin.site.register(Feedback)
@@ -21,35 +21,63 @@ admin.site.register(FeedbackSession)
 admin.site.register(Course)
 
 
+
 def test_provider_connection(provider: Provider) -> tuple[bool, str]:
     """
     Hier deine echte Verbindungslogik (kurzer Timeout!).
     """
     try:
-        if provider.type == ProviderType.OLLAMA:
-            def get_primary_headers():
-                """Get headers for primary Ollama host"""
-                headers = {"Content-Type": "application/json"}
-                headers["Authorization"] = f"Bearer {provider.api_key}"
-                return headers
-
-
-            test_client = Client(
-                host=provider.endpoint,
-                headers=get_primary_headers(),
-                timeout=5,  # Short timeout for connection test
-            )
-            # Lightweight operation here to verify connectivity
-            list = test_client.list()
-            response_message = f"Successfully. Found {len(list.models)} models!"
-        return True, response_message
+        provider_class = SCHEMA_REGISTRY[provider.type][1]
+        config = OllamaConfig.from_provider(provider)
+        test_client = provider_class(config)
+        return test_client.test_connection()
     except Exception as e:
         return False, str(e)
+
+def schema_help(schema_cls):
+    lines = []
+    for name, field in schema_cls.model_fields.items():
+        extra = field.json_schema_extra or {}
+        if extra.get("admin_visible") is False:
+            continue
+
+        desc = field.description or ""
+        default = field.default if field.default is not None else "—"
+        typ = getattr(field.annotation, "__name__", str(field.annotation))
+        lines.append(f"- <code>{name}</code> ({typ}, default: {default}) {desc}")
+    return "<br>".join(lines)
+
 
 class ProviderAdminForm(forms.ModelForm):
     class Meta:
         model = Provider
         fields = "__all__"
+
+    class Media:
+        js = ("admin/js/admin/ProviderTypeAutosubmit.js",)
+
+    config = forms.JSONField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 12, "spellcheck": "false", "style": "font-family:monospace"})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Typ ermitteln (bei Add ggf. aus POST)
+        provider_type = self.data.get("type") or getattr(self.instance, "type", None)
+        schema_cls = SCHEMA_REGISTRY.get(provider_type)
+        schema_cls = schema_cls[0]
+
+        # JSON initial befüllen
+        if self.instance and self.instance.config:
+            self.fields["config"].initial = self.instance.config
+
+        # Hilfetext aus Pydantic-Schema
+        if schema_cls:
+            self.fields["config"].help_text = schema_help(schema_cls)
+        else:
+            self.fields["config"].help_text = f"Free JSON (no registriertes Schema for '{provider_type}')."
 
     def clean(self):
         cleaned = super().clean()
@@ -69,12 +97,24 @@ class ProviderAdminForm(forms.ModelForm):
 
         return cleaned
 
+
 @admin.register(Provider)
 class ProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     form = ProviderAdminForm
     list_display = ("name", "type", "is_active", "updated_at")
     list_filter = ("type", "is_active")
     search_fields = ("name", "endpoint")
+
+    def get_fields(self, request, obj=None):
+        # Reihenfolge inklusive readonly-Felder
+        return [
+            "name",
+            "type",
+            "endpoint",
+            "api_key",
+            "is_active",
+            "config"
+        ]
 
 
 class CriteriaInline(admin.TabularInline):
@@ -96,32 +136,119 @@ class CriteriaInline(admin.TabularInline):
     def has_add_permission(self, request, obj=None):
         return False
 
+
+class ReassignForm(forms.Form):
+    """Formular zum Umhängen aller Criteria eines LLM auf ein anderes LLM."""
+    target_llm = forms.ModelChoiceField(
+        queryset=LLMModel.objects.none(),
+        label="Target-LLM",
+        help_text="All criteria linked to this LLM will be reassigned to the selected LLM",
+    )
+    confirm = forms.BooleanField(
+        required=True,
+        label="Confirm bulk change"
+    )
+
+    def __init__(self, *args, current_llm=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = LLMModel.objects.all()
+        if current_llm is not None:
+            qs = qs.exclude(pk=current_llm.pk)
+        self.fields["target_llm"].queryset = qs
+
 @admin.register(LLMModel)
 class LLMModelAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "provider",
         "external_name",
+        "is_default_icon",
         "is_active",
-        "criteria_count_link",   # <- neue Zählspalte mit Link
+        "criteria_count_link",
         "created_at",
         "updated_at",
     )
     search_fields = ("name", "external_name", "provider__name")
-    list_filter = ("provider", "is_active")
+    list_filter = ("provider", "is_active", "is_default")
     inlines = [CriteriaInline]
+
+    change_form_template = "admin/home/llmmodel/change_form.html"
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # WICHTIG: 'llm' entspricht deinem related_name an Criteria.llm_fk
-        # Falls du den änderst (z.B. auf "criteria"), hier + in Count anpassen.
         return qs.annotate(_criteria_count=Count("llm", distinct=True))
 
-    @admin.display(ordering="_criteria_count", description="Criteria genutzt")
+    @admin.display(boolean=True, description="Default", ordering="is_default")
+    def is_default_icon(self, obj):
+        return obj.is_default
+
+    @admin.display(ordering="_criteria_count", description="Used in Criteria")
     def criteria_count_link(self, obj):
         count = getattr(obj, "_criteria_count", 0)
         url = (
-            reverse("admin:home_criteria_changelist")
-            + f"?llm_fk__id__exact={obj.id}"
+                reverse("admin:home_criteria_changelist")
+                + f"?llm_fk__id__exact={obj.id}"
         )
         return format_html('<a href="{}">{}</a>', url, count)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "<path:object_id>/bulk-reassign/",
+                self.admin_site.admin_view(self.bulk_reassign_view),
+                name="home_llmmodel_bulk_reassign",
+            )
+        ]
+        return custom + urls
+
+    def bulk_reassign_view(self, request, object_id, *args, **kwargs):
+        llm_model = get_object_or_404(LLMModel, pk=object_id)
+
+        # Berechtigung: nur wer dieses Objekt ändern darf
+        if not self.has_change_permission(request, llm_model):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+
+        # Anzahl der betroffenen Criteria vorab
+        affected_qs = Criteria.objects.filter(llm_fk=llm_model)
+        affected_count = affected_qs.count()
+
+        if request.method == "POST":
+            form = ReassignForm(request.POST, current_llm=llm_model)
+            if form.is_valid():
+                target = form.cleaned_data["target_llm"]
+
+                if target.pk == llm_model.pk:
+                    form.add_error("target_llm", "The target LLM must be distinct from the previous model.")
+                else:
+                    with transaction.atomic():
+                        updated = affected_qs.update(llm_fk=target)
+                    messages.success(
+                        request,
+                        "{} Criteria was changed to '{}'.".format(updated, target)
+                    )
+
+                    change_url = reverse("admin:home_llmmodel_change", args=[llm_model.pk])
+                    return redirect(change_url)
+        else:
+            form = ReassignForm(current_llm=llm_model)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Bulk: Change LLM for Criteria",
+            "original": llm_model,
+            "opts": self.model._meta,
+            "form": form,
+            "affected_count": affected_count,
+        }
+        return render(request, "admin/home/llmmodel/bulk_reassign.html", context)
+
+    # Link in Tools in Toolbar upper right
+    def render_change_form(self, request, context, *args, **kwargs):
+        obj = context.get("original")
+        if obj and self.has_change_permission(request, obj):
+            context["bulk_reassign_url"] = reverse(
+                "admin:home_llmmodel_bulk_reassign", args=[obj.pk]
+            )
+        return super().render_change_form(request, context, *args, **kwargs)

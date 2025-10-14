@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if bulk_reassign_url %}
+    <li>
+      <a class="historylink" href="{{ bulk_reassign_url }}">
+        {% trans "Bulk: Change LLM for Criteria" %}
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}

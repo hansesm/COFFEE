@@ -4,10 +4,12 @@ import uuid
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from coffee.home.security.encryption import EncryptedTextField
+from coffee.home.registry import ProviderType
+from coffee.home.validations import validate_config_for_type
 
 
 def get_default_course():
@@ -97,11 +99,6 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-class ProviderType(models.TextChoices):
-    AZURE_AI = "azure_ai", "Azure AI"  # z.B. Azure AI Inference
-    AZURE_OPENAI = "azure_openai", "Azure OpenAI"
-    OLLAMA = "ollama", "Ollama"
-
 class Provider(models.Model):
     name = models.CharField(max_length=100, unique=True)
     type = models.CharField(max_length=32, choices=ProviderType.choices)
@@ -126,14 +123,11 @@ class Provider(models.Model):
         return f"{self.name}"
 
     def clean(self):
-        # 1) Pydantic-Validierung deiner config (weiter wie bisher)
-        from coffee.home.validators import validate_config_for_type
         try:
             validate_config_for_type(self.type, self.config)
         except ValueError as e:
             raise ValidationError({"config": str(e)})
 
-        # 2) Minimal-Validierung je Typ für Credentials
         errors = {}
         if self.type in [ProviderType.AZURE_OPENAI, ProviderType.AZURE_AI]:
             if not self.endpoint:
@@ -178,8 +172,21 @@ class LLMModel(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    is_default = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            # Save to obtain primary key
+            super().save(*args, **kwargs)
+            if self.is_default:
+                # Reset other default model
+                (self.__class__.objects
+                 .exclude(pk=self.pk)
+                 .filter(is_default=True)
+                 .update(is_default=False))
 
     class Meta:
         # Ein Modell darf pro Provider höchstens einmal mit Kombination (external_name, deployment_name) existieren

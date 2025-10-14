@@ -1,149 +1,115 @@
 import logging
+from typing import Iterable, Optional, Tuple, List, Dict
 from ollama import Client
-from django.conf import settings
 
-def get_primary_headers():
-    """Get headers for primary Ollama host"""
-    headers = {"Content-Type": "application/json"}
-    if settings.OLLAMA_PRIMARY_AUTH_TOKEN:
-        headers["Authorization"] = f"Bearer {settings.OLLAMA_PRIMARY_AUTH_TOKEN}"
-    return headers
+from coffee.home.ai_provider.llm_provider_base import AIBaseClient
+from coffee.home.ai_provider.configs import OllamaConfig
 
-def get_fallback_headers():
-    """Get headers for fallback Ollama host"""
-    headers = {"Content-Type": "application/json"}
-    if settings.OLLAMA_FALLBACK_AUTH_TOKEN:
-        headers["Authorization"] = f"Bearer {settings.OLLAMA_FALLBACK_AUTH_TOKEN}"
-    return headers 
+logger = logging.getLogger(__name__)
 
-def get_client(timeout=None):
-    """
-    Creates and returns an Ollama Client.
-    It tries the primary host first and falls back to fallback host if necessary.
-    
-    Args:
-        timeout: Custom timeout in seconds. If None, uses OLLAMA_REQUEST_TIMEOUT setting.
-    """
-    if timeout is None:
-        timeout = settings.OLLAMA_REQUEST_TIMEOUT
-        
-    try:
-        # First try with a short timeout just for connection testing
-        test_client = Client(
-            host=settings.OLLAMA_PRIMARY_HOST,
-            headers=get_primary_headers(),
-            verify=settings.OLLAMA_PRIMARY_VERIFY_SSL,
-            timeout=5,  # Short timeout for connection test
-        )
-        # Lightweight operation here to verify connectivity
-        test_client.list()
-        logging.info("Connected to primary Ollama host: %s", settings.OLLAMA_PRIMARY_HOST)
-        
-        # Now create the actual client with proper timeout for operations
-        client = Client(
-            host=settings.OLLAMA_PRIMARY_HOST,
-            headers=get_primary_headers(),
-            verify=settings.OLLAMA_PRIMARY_VERIFY_SSL,
-            timeout=timeout,
-        )
-        return client
-    except Exception as primary_error:
-        logging.error("Primary host failed: %s", primary_error)
-        print("Primary host failed: " + str(primary_error))
-        
-        if not settings.OLLAMA_ENABLE_FALLBACK:
-            logging.error("Fallback is disabled, raising primary error")
-            raise primary_error
-            
+class OllamaClient(AIBaseClient):
+    def __init__(
+        self,
+        config: Optional[OllamaConfig] = None,
+    ) -> None:
+        self.config = config
+        if not self.config.host:
+            raise ValueError("OLLAMA host ist nicht konfiguriert.")
+
+        self._client: Optional[Client] = None
+
+    # intern: Header bauen
+    def _headers(self) -> Dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.config.auth_token:
+            headers["Authorization"] = f"Bearer {self.config.auth_token}"
+        return headers
+
+    # intern: SDK-Client (lazy)
+    def _client_obj(self) -> Client:
+        if self._client is None:
+            self._client = Client(
+                host=self.config.host,
+                verify=self.config.verify_ssl,
+                headers=self._headers(),
+                timeout=self.config.request_timeout,
+            )
+            logger.info(
+                "Ollama Client instanziiert (host=%s, verify_ssl=%s, timeout=%ss)",
+                self.config.host, self.config.verify_ssl, self.config.request_timeout
+            )
+        return self._client
+
+    # --- Interface: Modelle aus Settings (wie bei Azure-Variante) ------------
+    def list_models(self) -> List[Dict[str, str]]:
+        models = [{"name": m, "backend": "ollama"} for m in (self.config.model_names or []) if m]
+        logger.info("Konfigurierte Ollama-Modelle: %s", [m["name"] for m in models])
+        return models
+
+    # --- Interface: Health-Check ---------------------------------------------
+    def test_connection(self, model_name: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        Leichter Check: /api/tags via client.list() + optional Mini-Chat.
+        """
         try:
-            # Test fallback connection
-            test_client = Client(
-                host=settings.OLLAMA_FALLBACK_HOST,
-                headers=get_fallback_headers(),
-                verify=settings.OLLAMA_FALLBACK_VERIFY_SSL,
-                timeout=5,  # Short timeout for connection test
+            _ = self._client_obj().list()  # prüft Erreichbarkeit & Auth
+            return True, "Verbindung ok."
+        except Exception as e:
+            logger.exception("Ollama list() fehlgeschlagen")
+            return False, f"Verbindungsfehler: {e!s}"
+
+    def stream(self, model_name: str, user_input: str, system_prompt: str) -> Iterable[str]:
+        """
+        Streamt `message.content`-Deltas.
+        """
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": user_input})
+
+            logger.info("Ollama Streaming gestartet (model=%s)", model_name)
+            stream = self._client_obj().chat(
+                model=model_name,
+                messages=messages,
+                stream=True,
+                options={
+                    # Annäherung an eure Defaults; bei Ollama heißen Params anders
+                    "temperature": 0.8,
+                    "top_p": 0.1,
+                    # presence/frequency penalties werden nicht von allen Modellen unterstützt
+                },
             )
-            test_client.list()
-            logging.info("Connected to fallback Ollama host: %s", settings.OLLAMA_FALLBACK_HOST)
-            
-            # Create actual client with proper timeout
-            client = Client(
-                host=settings.OLLAMA_FALLBACK_HOST,
-                headers=get_fallback_headers(),
-                verify=settings.OLLAMA_FALLBACK_VERIFY_SSL,
-                timeout=timeout,
+            for chunk in stream:
+                try:
+                    yield chunk["message"]["content"]
+                except Exception:
+                    # Ein kaputter Chunk soll den Stream nicht abbrechen
+                    logger.debug("Unerwartete Stream-Struktur: %r", chunk, exc_info=True)
+                    continue
+        except Exception as e:
+            logger.exception("Ollama Streaming Fehler")
+            yield f"Ollama streaming error: {e!s}"
+
+    def generate(self, model_name: str, user_input: str, system_prompt: str) -> str:
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": user_input})
+
+            logger.info("Ollama Generate gestartet (model=%s)", model_name)
+            resp = self._client_obj().chat(
+                model=model_name,
+                messages=messages,
+                stream=False,
+                options={
+                    "temperature": 0.8,
+                    "top_p": 0.1,
+                    # num_predict analog zu max_tokens; None = Modellstandard
+                },
             )
-            return client
-        except Exception as fallback_error:
-            logging.error("Fallback host also failed: %s", fallback_error)
-            print("Fallback host also failed: " + str(fallback_error))
-            # Reraise the exception so the calling function knows something went wrong.
-            raise fallback_error
-
-def stream_chat_response(prompt, model=None):
-    """
-    Uses the Ollama Client to call the chat API with streaming enabled.
-    The client is configured with a primary host and falls back to an alternative host if needed.
-    """
-    if model is None:
-        model = settings.OLLAMA_DEFAULT_MODEL
-        
-    try:
-        client = get_client()
-        logging.info("Starting chat stream with model: %s", model)
-        stream = client.chat(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            stream=True
-        )
-        for chunk in stream:
-            try:
-                yield chunk["message"]["content"]
-            except KeyError:
-                logging.error("Unexpected response structure: %s", chunk)
-                yield "Unexpected response structure"
-    except Exception as e:
-        logging.error("Error during streaming chat: %s", e)
-        yield f"An error occurred: {e}"
-
-def list_models():
-    """
-    Returns the list of available Ollama models from configuration.
-    Uses hardcoded model names from settings for consistent and fast loading.
-    """
-    try:
-        from django.conf import settings
-        
-        model_names = getattr(settings, 'OLLAMA_MODEL_NAMES', 'phi4:latest')
-        
-        # Handle both string and list configurations
-        if isinstance(model_names, str):
-            model_names = [name.strip() for name in model_names.split(',')]
-        
-        # Filter out empty strings
-        model_list = [model.strip() for model in model_names if model.strip()]
-        
-        logging.info("Available Ollama models from configuration: %s", model_list)
-        return model_list
-        
-    except Exception as e:
-        logging.error("Error during listing models: %s", e)
-        # Return default model as fallback
-        return ['phi4:latest']
-
-def get_ollama_config():
-    """
-    Returns the current Ollama configuration for debugging/info purposes.
-    """
-    return {
-        "primary_host": settings.OLLAMA_PRIMARY_HOST,
-        "primary_verify_ssl": settings.OLLAMA_PRIMARY_VERIFY_SSL,
-        "fallback_host": settings.OLLAMA_FALLBACK_HOST,
-        "fallback_verify_ssl": settings.OLLAMA_FALLBACK_VERIFY_SSL,
-        "default_model": settings.OLLAMA_DEFAULT_MODEL,
-        "request_timeout": settings.OLLAMA_REQUEST_TIMEOUT,
-        "enable_fallback": settings.OLLAMA_ENABLE_FALLBACK,
-        "has_primary_auth": bool(settings.OLLAMA_PRIMARY_AUTH_TOKEN),
-        "has_fallback_auth": bool(settings.OLLAMA_FALLBACK_AUTH_TOKEN),
-    }
-
+            return (resp.get("message", {}).get("content") or "").strip()
+        except Exception as e:
+            logger.exception("Ollama Generate Fehler")
+            return f"Ollama generation error: {e!s}"

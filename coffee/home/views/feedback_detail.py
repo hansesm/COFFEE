@@ -14,7 +14,7 @@ from coffee.home.models import (
     Feedback,
     FeedbackCriteria,
 )
-from coffee.home.ai_provider.ollama_api import stream_chat_response
+# from coffee.home.ai_provider.ollama_api import stream_chat_response TODO
 
 
 def feedback(request, id):
@@ -69,7 +69,7 @@ def feedback_stream(request, feedback_uuid, criteria_uuid):
         streaming_response["Cache-Control"] = "no-cache"
         streaming_response["X-Accel-Buffering"] = "no"
 
-        response = stream_chat_response(custom_prompt, model_name)
+        # response = stream_chat_response(custom_prompt, model_name)
 
         return streaming_response
     except Exception as e:

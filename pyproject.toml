@@ -47,6 +47,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "graphviz>=0.21",
+    "pydeps>=3.0.1",
     "taskipy>=1.14.1",
 ]
 

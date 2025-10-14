@@ -1,154 +1,134 @@
-import os
+from typing import Optional, Tuple, List, Dict, Iterable
 import logging
+
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
-from django.conf import settings
+
+from coffee.home.ai_provider.configs import AzureAIConfig
+from coffee.home.ai_provider.llm_provider_base import AIBaseClient
 
 logger = logging.getLogger(__name__)
 
-def get_azure_ai_client():
+class AzureAIClient(AIBaseClient):
     """
-    Creates and returns an Azure AI Inference Client.
+    Implementiert AIBaseClient für Azure AI Inference auf Basis einer AzureAIConfig.
     """
-    try:
-        endpoint = getattr(settings, 'AZURE_AI_ENDPOINT', '')
-        api_key = getattr(settings, 'AZURE_AI_API_KEY', '')
-        api_version = getattr(settings, 'AZURE_AI_API_VERSION', '2024-05-01-preview')
-        
-        if not endpoint or not api_key:
-            logger.error("Azure AI endpoint or API key not configured")
-            return None
-            
-        client = ChatCompletionsClient(
-            endpoint=endpoint,
-            credential=AzureKeyCredential(api_key),
-            api_version=api_version
-        )
-        
-        logger.info("Azure AI client created successfully")
-        return client
-        
-    except Exception as e:
-        logger.error(f"Failed to create Azure AI client: {e}")
-        return None
 
-def list_azure_ai_models():
-    """
-    Returns available Azure AI models from configuration.
-    Uses hardcoded model names from settings.
-    """
-    try:
-        model_names = getattr(settings, 'AZURE_AI_MODEL_NAMES', 'Phi-4')
-        
-        # Handle both string and list configurations
-        if isinstance(model_names, str):
-            model_names = [name.strip() for name in model_names.split(',')]
-        
-        models = []
-        for model_name in model_names:
-            if model_name.strip():  # Skip empty strings
-                models.append({
-                    'name': model_name.strip(),
-                    'backend': 'azure_ai'
-                })
-        
-        logger.info(f"Found {len(models)} configured Azure AI models")
+    def __init__(self, config: AzureAIConfig, logger_: Optional[logging.Logger] = None) -> None:
+        self.config = config
+        self.logger = logger_ or logger
+        if not self.config.endpoint or not self.config.api_key:
+            raise ValueError("AzureAIClient: endpoint oder api_key fehlen in AzureAIConfig.")
+        self._client: Optional[ChatCompletionsClient] = None
+
+    # Optionaler Convenience-Konstruktor – nur nutzen, wenn du Provider-ORM hast:
+    @classmethod
+    def from_provider(cls, provider: "Provider") -> "AzureAIClient":
+        cfg = AzureAIConfig.from_provider(provider)
+        return cls(cfg)
+
+    # ---------- Intern ----------
+    def _client_obj(self) -> ChatCompletionsClient:
+        if self._client is None:
+            self._client = ChatCompletionsClient(
+                endpoint=self.config.endpoint,
+                credential=AzureKeyCredential(self.config.api_key),
+                api_version=self.config.api_version,
+            )
+            self.logger.info(
+                "Azure AI Client initialisiert (endpoint=%s, api_version=%s)",
+                self.config.endpoint, self.config.api_version
+            )
+        return self._client
+
+    # ---------- AIBaseClient: Interface ----------
+    def test_connection(self, model_name: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        Minimaler Health-Check: kurze Completion mit max_tokens=1.
+        """
+        model = model_name or (self.config.default_model or (self.config.model_names[0] if self.config.model_names else None))
+        if not model:
+            return False, "Kein Modell konfiguriert."
+
+        try:
+            messages = [
+                SystemMessage(content="You are a health check. Reply with 'ok'."),
+                UserMessage(content="ping"),
+            ]
+            resp = self._client_obj().complete(
+                messages=messages,
+                model=model,
+                max_tokens=1,
+                temperature=0.0,
+                top_p=1.0,
+            )
+            ok = bool(resp and resp.choices and resp.choices[0].message and (resp.choices[0].message.content or "").strip())
+            return (True, "Verbindung ok.") if ok else (False, "Leere Antwort erhalten.")
+        except Exception as e:
+            self.logger.exception("Azure AI Health-Check fehlgeschlagen")
+            return False, f"Fehler beim Test: {e!s}"
+
+    def list_models(self) -> List[Dict[str, str]]:
+        """
+        Modelle aus der Config (schnell + deterministisch).
+        """
+        names = self.config.model_names or ([self.config.default_model] if self.config.default_model else [])
+        models = [{"name": n, "backend": "azure_ai"} for n in names if n]
+        self.logger.info("Konfigurierte Azure-Modelle: %s", [m["name"] for m in models])
         return models
-        
-    except Exception as e:
-        logger.error(f"Failed to list Azure AI models: {e}")
-        return []
 
-def stream_azure_ai_response(model_name, user_input, system_prompt):
-    """
-    Stream response from Azure AI Inference.
-    
-    Args:
-        model_name: The Azure AI model name
-        user_input: User's input text
-        system_prompt: System prompt for the model
-    
-    Yields:
-        str: Streamed response chunks
-    """
-    try:
-        client = get_azure_ai_client()
-        if not client:
-            yield "Error: Could not connect to Azure AI"
-            return
-        
-        messages = [
-            SystemMessage(content=system_prompt),
-            UserMessage(content=user_input)
-        ]
-        
-        logger.info(f"Starting Azure AI stream for model: {model_name}")
-        logger.info(f"Using endpoint: {getattr(settings, 'AZURE_AI_ENDPOINT', '')}")
-        logger.info(f"Using API version: {getattr(settings, 'AZURE_AI_API_VERSION', '2024-05-01-preview')}")
-        
-        response = client.complete(
-            messages=messages,
-            model=model_name,
-            max_tokens=getattr(settings, 'AZURE_AI_MAX_TOKENS', 2048),
-            temperature=getattr(settings, 'AZURE_AI_TEMPERATURE', 0.8),
-            top_p=getattr(settings, 'AZURE_AI_TOP_P', 0.1),
-            presence_penalty=getattr(settings, 'AZURE_AI_PRESENCE_PENALTY', 0.0),
-            frequency_penalty=getattr(settings, 'AZURE_AI_FREQUENCY_PENALTY', 0.0),
-            stream=True
-        )
-        
-        for chunk in response:
-            logger.debug(f"Chunk: {chunk}")
-            if hasattr(chunk, 'choices') and chunk.choices and len(chunk.choices) > 0:
-                choice = chunk.choices[0]
-                if hasattr(choice, 'delta') and choice.delta and hasattr(choice.delta, 'content') and choice.delta.content:
-                    yield choice.delta.content
-            else:
-                logger.warning(f"Empty choices in chunk: {chunk}")
-                
-    except Exception as e:
-        error_msg = f"Azure AI streaming error: {str(e)}"
-        logger.error(error_msg)
-        yield error_msg
+    def stream(self, model_name: str, user_input: str, system_prompt: str) -> Iterable[str]:
+        """
+        Streaming-Completion. Gibt inkrementelle Textstücke (str) aus.
+        """
+        try:
+            messages = [SystemMessage(content=system_prompt), UserMessage(content=user_input)]
+            self.logger.info("Azure Streaming gestartet (model=%s)", model_name)
+            response = self._client_obj().complete(
+                messages=messages,
+                model=model_name,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+                presence_penalty=self.config.presence_penalty,
+                frequency_penalty=self.config.frequency_penalty,
+                stream=True,
+            )
+            for chunk in response:
+                try:
+                    if getattr(chunk, "choices", None):
+                        choice = chunk.choices[0]
+                        delta = getattr(choice, "delta", None)
+                        content = getattr(delta, "content", None)
+                        if content:
+                            yield content
+                    else:
+                        self.logger.debug("Leerer Chunk: %r", chunk)
+                except Exception:
+                    self.logger.debug("Chunk konnte nicht interpretiert werden: %r", chunk, exc_info=True)
+                    continue
+        except Exception as e:
+            self.logger.exception("Azure AI Streaming Fehler")
+            yield f"Azure AI streaming error: {e!s}"
 
-def generate_azure_ai_response(model_name, user_input, system_prompt):
-    """
-    Generate complete response from Azure AI (non-streaming).
-    
-    Args:
-        model_name: The Azure AI model name
-        user_input: User's input text
-        system_prompt: System prompt for the model
-    
-    Returns:
-        str: Complete response text
-    """
-    try:
-        client = get_azure_ai_client()
-        if not client:
-            return "Error: Could not connect to Azure AI"
-        
-        messages = [
-            SystemMessage(content=system_prompt),
-            UserMessage(content=user_input)
-        ]
-        
-        logger.info(f"Generating Azure AI response for model: {model_name}")
-        
-        response = client.complete(
-            messages=messages,
-            model=model_name,
-            max_tokens=getattr(settings, 'AZURE_AI_MAX_TOKENS', 2048),
-            temperature=getattr(settings, 'AZURE_AI_TEMPERATURE', 0.8),
-            top_p=getattr(settings, 'AZURE_AI_TOP_P', 0.1),
-            presence_penalty=getattr(settings, 'AZURE_AI_PRESENCE_PENALTY', 0.0),
-            frequency_penalty=getattr(settings, 'AZURE_AI_FREQUENCY_PENALTY', 0.0)
-        )
-        
-        return response.choices[0].message.content
-        
-    except Exception as e:
-        error_msg = f"Azure AI generation error: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
+    def generate(self, model_name: str, user_input: str, system_prompt: str) -> str:
+        """
+        Non-Streaming-Completion. Gibt den gesamten Text zurück.
+        """
+        try:
+            messages = [SystemMessage(content=system_prompt), UserMessage(content=user_input)]
+            self.logger.info("Azure Generate gestartet (model=%s)", model_name)
+            resp = self._client_obj().complete(
+                messages=messages,
+                model=model_name,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+                presence_penalty=self.config.presence_penalty,
+                frequency_penalty=self.config.frequency_penalty,
+            )
+            return (resp.choices[0].message.content or "").strip()
+        except Exception as e:
+            self.logger.exception("Azure AI Generation Fehler")
+            return f"Azure AI generation error: {e!s}"
