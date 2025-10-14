@@ -29,7 +29,7 @@ def get_default_course():
 
 
 def get_default_llm():
-    provider, _ = Provider.objects.get_or_create(
+    provider, _ = LLMProvider.objects.get_or_create(
         name="Default", defaults={"type": ProviderType.OLLAMA, "config": {}, "endpoint": "", "is_active": True}
     )
     llm, _ = LLMModel.objects.get_or_create(
@@ -99,7 +99,7 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-class Provider(models.Model):
+class LLMProvider(models.Model):
     name = models.CharField(max_length=100, unique=True)
     type = models.CharField(max_length=32, choices=ProviderType.choices)
 
@@ -115,6 +115,9 @@ class Provider(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "LLM Provider"
+        verbose_name_plural = "LLM Providers"
+        db_table = "home_provider"
         indexes = [
             models.Index(fields=["type", "is_active"]),
         ]
@@ -156,7 +159,7 @@ class LLMModel(models.Model):
     """
 
     provider = models.ForeignKey(
-        Provider,
+        LLMProvider,
         on_delete=models.PROTECT,
         related_name="llm_models",
     )
@@ -189,7 +192,8 @@ class LLMModel(models.Model):
                  .update(is_default=False))
 
     class Meta:
-        # Ein Modell darf pro Provider höchstens einmal mit Kombination (external_name, deployment_name) existieren
+        verbose_name = "LLM Model"
+        verbose_name_plural = "LLM Models"
         models.UniqueConstraint(fields=["provider", "external_name"], name="unique_provider_external-name")
         indexes = [
             models.Index(fields=["provider", "is_active"]),

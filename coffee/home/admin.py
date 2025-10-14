@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from coffee.home.ai_provider.configs import OllamaConfig, AzureAIConfig
 from coffee.home.models import LLMModel, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, \
-    Course, Provider
+    Course, LLMProvider
 from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
 from coffee.home.registry import SCHEMA_REGISTRY
 
@@ -22,7 +22,7 @@ admin.site.register(Course)
 
 
 
-def test_provider_connection(provider: Provider) -> tuple[bool, str]:
+def test_provider_connection(provider: LLMProvider) -> tuple[bool, str]:
     """
     Hier deine echte Verbindungslogik (kurzer Timeout!).
     """
@@ -48,9 +48,9 @@ def schema_help(schema_cls):
     return "<br>".join(lines)
 
 
-class ProviderAdminForm(forms.ModelForm):
+class LLMProviderAdminForm(forms.ModelForm):
     class Meta:
-        model = Provider
+        model = LLMProvider
         fields = "__all__"
 
     class Media:
@@ -87,9 +87,9 @@ class ProviderAdminForm(forms.ModelForm):
 
         # Secret-Feld: empty api_key in form => use old value
         if self.instance.pk and not cleaned.get("api_key"):
-            data["api_key"] = Provider.objects.get(pk=self.instance.pk).api_key
+            data["api_key"] = LLMProvider.objects.get(pk=self.instance.pk).api_key
 
-        temp = Provider(**data)
+        temp = LLMProvider(**data)
 
         ok, msg = test_provider_connection(temp)
         if not ok:
@@ -98,9 +98,9 @@ class ProviderAdminForm(forms.ModelForm):
         return cleaned
 
 
-@admin.register(Provider)
-class ProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
-    form = ProviderAdminForm
+@admin.register(LLMProvider)
+class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
+    form = LLMProviderAdminForm
     list_display = ("name", "type", "is_active", "updated_at")
     list_filter = ("type", "is_active")
     search_fields = ("name", "endpoint")
