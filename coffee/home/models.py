@@ -279,8 +279,11 @@ class LLMModel(models.Model):
             models.Index(fields=["external_name"]),
         ]
 
-    def __str__(self):
+    def display_name(self):
         return f"{self.provider.name}: {self.name} [{self.external_name}]"
+
+    def __str__(self):
+        return self.display_name()
 
     def clean(self):
         """

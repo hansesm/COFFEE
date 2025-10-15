@@ -14,6 +14,7 @@ from coffee.home.models import (
     Criteria,
 )
 from coffee.home.views.utils import check_permissions_and_group
+from coffee.home.models import LLMModel
 
 
 class CrudCriteriaView(ManagerRequiredMixin, View):
@@ -32,12 +33,10 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
 
         # Try to get LLM models, but don't fail the entire page if Ollama is unavailable
         llm_models_error = None
-        llm_models = []
 
         try:
             logging.info("Attempting to fetch LLM models from all backends...")
-            from coffee.home.llm_backends import get_all_available_models
-            llm_models = get_all_available_models()
+            llm_models = LLMModel.objects.filter(is_active=True)
             logging.info("Successfully fetched %d LLM models from all backends", len(llm_models))
         except Exception as e:
             logging.error("Failed to fetch LLM models: %s", e)
@@ -64,7 +63,7 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
             title = request.POST.get("title")
             active = request.POST.get("active") == "true"
             description = request.POST.get("description")
-            llm = request.POST.get("llm")
+            llm_pk = request.POST.get("llm")
             prompt = request.POST.get("prompt")
             sequels = request.POST.get("sequels")
             tag = request.POST.get("tag")
@@ -90,12 +89,18 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
                 criteria_obj.title = title
                 criteria_obj.description = description
                 criteria_obj.active = active
-                criteria_obj.llm = llm
                 criteria_obj.prompt = prompt
                 criteria_obj.sequels = sequels
                 criteria_obj.tag = tag
                 if course_id:
                     criteria_obj.course_id = course_id
+
+                if llm_pk:
+                    llm_obj = LLMModel.objects.get(pk=llm_pk)
+                    criteria_obj.llm_fk = llm_obj
+                else:
+                    criteria_obj.llm_fk = None
+
                 criteria_obj.save()
                 return JsonResponse({"success": True})
             except Exception as e:
