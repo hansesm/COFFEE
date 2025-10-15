@@ -5,11 +5,11 @@ from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse, path
+from django.utils import timezone
 from django.utils.html import format_html
 
-from coffee.home.ai_provider.configs import OllamaConfig, AzureAIConfig
 from coffee.home.models import LLMModel, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, \
-    Course, LLMProvider
+    Course, LLMProvider, FeedbackCriterionResult
 from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
 from coffee.home.registry import SCHEMA_REGISTRY
 
@@ -18,6 +18,7 @@ admin.site.register(Criteria)
 admin.site.register(Feedback)
 admin.site.register(FeedbackCriteria)
 admin.site.register(FeedbackSession)
+admin.site.register(FeedbackCriterionResult)
 admin.site.register(Course)
 
 
@@ -27,8 +28,8 @@ def test_provider_connection(provider: LLMProvider) -> tuple[bool, str]:
     Hier deine echte Verbindungslogik (kurzer Timeout!).
     """
     try:
-        provider_class = SCHEMA_REGISTRY[provider.type][1]
-        config = OllamaConfig.from_provider(provider)
+        provider_config, provider_class = SCHEMA_REGISTRY[provider.type]
+        config = provider_config.from_provider(provider)
         test_client = provider_class(config)
         return test_client.test_connection()
     except Exception as e:
@@ -47,6 +48,11 @@ def schema_help(schema_cls):
         lines.append(f"- <code>{name}</code> ({typ}, default: {default}) {desc}")
     return "<br>".join(lines)
 
+
+@admin.action(description="Reset token quota window now")
+def reset_quota_now(modeladmin, request, queryset):
+    for p in queryset:
+        p.reset_quota()
 
 class LLMProviderAdminForm(forms.ModelForm):
     class Meta:
@@ -119,10 +125,11 @@ class ProviderModelsInline(admin.TabularInline):
 @admin.register(LLMProvider)
 class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     form = LLMProviderAdminForm
-    list_display = ("name", "type", "is_active", "models_count_link", "updated_at")
+    list_display = ("name", "type", "is_active", "models_count_link", "quota_soft", "next_reset_eta", "updated_at")
     list_filter = ("type", "is_active")
     search_fields = ("name", "endpoint")
     inlines = [ProviderModelsInline]
+    actions = [reset_quota_now]
 
     def get_fields(self, request, obj=None):
         return [
@@ -131,6 +138,8 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
             "endpoint",
             "api_key",
             "is_active",
+            "token_limit",
+            "token_reset_interval",
             "config"
         ]
 
@@ -143,6 +152,49 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
         count = getattr(obj, "_models_count", 0)
         url = reverse("admin:home_llmmodel_changelist") + f"?provider__id__exact={obj.id}"
         return format_html('<a href="{}">{}</a>', url, count)
+
+    @admin.display(description="Quota (soft)")
+    def quota_soft(self, obj):
+        if obj.token_limit == 0:
+            return format_html('<span style="color:gray;">unlimited</span>')
+
+        used = obj.used_tokens_soft()
+        limit = obj.token_limit
+        percent = used / limit if limit else 0
+
+        if used > limit:
+            color = "#b00"  # rot: exceeded
+            weight = "bold"
+        elif percent > 0.9:
+            color = "#e67e22"  # orange: >90%
+            weight = "bold"
+        elif percent > 0.7:
+            color = "#f1c40f"  # gelb: >70%
+            weight = "normal"
+        else:
+            color = "#2ecc71"  # grün: ok
+            weight = "normal"
+
+        used_str = f"{used:,}"
+        limit_str = f"{limit:,}"
+
+        return format_html(
+            '<span style="color:{}; font-weight:{};">{} / {}</span>',
+            color, weight, used_str, limit_str
+        )
+
+    @admin.display(description="Next reset")
+    def next_reset_eta(self, obj):
+        if obj.token_limit == 0:
+            return "—"
+        start, end = obj.quota_window_bounds()
+        overdue = timezone.now() >= end
+        text = timezone.localtime(end).strftime("%d.%m.%Y %H:%M")
+        return format_html(
+            '<span style="{}">{}</span>',
+            "color:#b00;font-weight:600;" if overdue else "",
+            text
+        )
 
 
 class CriteriaInline(admin.TabularInline):

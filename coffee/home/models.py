@@ -1,10 +1,14 @@
 import json
 import uuid
+from datetime import timedelta
 
+import django
 from django.contrib.auth.models import Group
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from coffee.home.security.encryption import EncryptedTextField
@@ -114,6 +118,73 @@ class LLMProvider(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
+    token_limit = models.PositiveBigIntegerField(
+        default=0,
+        help_text="Max. Tokens per Interval. 0 = No Limit."
+    )
+    token_reset_interval = models.DurationField(
+        default=timedelta(hours=24),
+        help_text="Reset-Interval (e.g. 24h)."
+    )
+    last_reset_at = models.DateTimeField(null=True, blank=True, default=django.utils.timezone.now)
+
+    @transaction.atomic
+    def reset_quota(self, at=None, save=True):
+        self.last_reset_at = at or timezone.now()
+        if save:
+            self.save(update_fields=["last_reset_at"])
+        return self.last_reset_at
+
+    @transaction.atomic
+    def roll_window_optimistic(self) -> bool:
+        now = timezone.now()
+        start, end = self.quota_window_bounds()
+        if now > end:
+            updated = (
+                LLMProvider.objects
+                .filter(pk=self.pk)
+                .update(last_reset_at=now)
+            )
+            if updated:
+                self.last_reset_at = now
+                return True
+        return False
+
+    def quota_window_bounds(self):
+        start = self.last_reset_at
+        end = start + self.token_reset_interval
+        return start, end
+
+    def used_tokens_soft(self) -> int:
+        """Summe der in der Fensterzeit verbrauchten Tokens (system + user + completion)."""
+        if self.token_limit == 0:
+            return 0
+        start, end = self.quota_window_bounds()
+
+        qs = FeedbackCriterionResult.objects.filter(
+            provider=self,
+            created_at__gte=start,
+            created_at__lt=end,
+        )
+
+        agg = qs.aggregate(
+            sys=Coalesce(Sum("tokens_used_system"), 0),
+            usr=Coalesce(Sum("tokens_used_user"), 0),
+            comp=Coalesce(Sum("tokens_used_completion"), 0),
+        )
+        return int(agg["sys"] + agg["usr"] + agg["comp"])
+
+    def soft_limit_exceeded(self, planned_tokens: int = 0) -> bool:
+        if self.token_limit == 0:
+            return False
+        return (self.used_tokens_soft() + planned_tokens) >= self.token_limit
+
+    def remaining_tokens_soft(self, planned_tokens: int = 0):
+        if self.token_limit == 0:
+            return None  # unlimited
+        rem = self.token_limit - self.used_tokens_soft() - planned_tokens
+        return max(0, rem)
+
     class Meta:
         verbose_name = "LLM Provider"
         verbose_name_plural = "LLM Providers"
@@ -190,6 +261,14 @@ class LLMModel(models.Model):
                  .exclude(pk=self.pk)
                  .filter(is_default=True)
                  .update(is_default=False))
+
+    @classmethod
+    def get_default(cls):
+        try:
+            return cls.objects.get(is_default=True)
+        except ObjectDoesNotExist:
+            # Fallback: take first active model
+            return cls.objects.filter(is_active=True).first()
 
     class Meta:
         verbose_name = "LLM Model"
@@ -316,6 +395,8 @@ class FeedbackSession(models.Model):
                                db_index=True)  # Indexed for foreign key lookups
 
     class Meta:
+        verbose_name = "Feedback Session"
+        verbose_name_plural = "Feedback Sessions"
         ordering = ["-timestamp"]  # Most recent first
         indexes = [
             models.Index(fields=['course', 'timestamp'], name='idx_fbsess_course_timestamp'),
@@ -324,3 +405,53 @@ class FeedbackSession(models.Model):
 
     def __str__(self):
         return f"Session {self.id} at {self.timestamp}"
+
+class FeedbackCriterionResult(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    session = models.ForeignKey(
+        FeedbackSession, on_delete=models.CASCADE,
+        related_name="criteria_results", db_index=True
+    )
+    # Client-seitige Kriteriums-ID (aus feedback_data.criteria[i].id)
+    client_criterion_id = models.UUIDField(db_index=True)
+
+    title = models.TextField(blank=True, null=True)
+
+    # Antwort
+    ai_response = models.TextField(blank=True, null=True)
+
+    # LLM / Provider (optional direkte FKs; alternativ: strings)
+    llm_model = models.ForeignKey(
+        LLMModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="criterion_results"
+    )
+    provider = models.ForeignKey(
+        LLMProvider, on_delete=models.SET_NULL, null=True, blank=True, related_name="criterion_results"
+    )
+    llm_external_name = models.TextField(blank=True, null=True)  # z.B. "phi4:latest"
+
+    # Usage (normalisiert, gleiche Semantik wie Session)
+    tokens_used_system = models.PositiveBigIntegerField(default=0)
+    tokens_used_user = models.PositiveBigIntegerField(default=0)
+    tokens_used_completion = models.PositiveBigIntegerField(default=0)
+
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Feedback Criteria Result"
+        verbose_name_plural = "Feedback Criteria Results"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "client_criterion_id"],
+                name="uq_critresult_session_clientid",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["llm_model", "created_at"], name="idx_crit_llm_time"),
+            models.Index(fields=["provider", "created_at"], name="idx_crit_provider_time"),
+        ]
+
+    @property
+    def tokens_used_total(self) -> int:
+        return (self.tokens_used_system or 0) + (self.tokens_used_user or 0) + (self.tokens_used_completion or 0)
+

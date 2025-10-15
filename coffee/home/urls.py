@@ -14,7 +14,7 @@ urlpatterns = [
     path("feedback/", feedback, name="feedback"),
     path("newtask/", task, name="newtask"),
     path(
-        "feedback_stream/<uuid:feedback_uuid>/<uuid:criteria_uuid>/",
+        "feedback-stream/<uuid:feedback_uuid>/<uuid:criteria_uuid>/",
         feedback_stream,
         name="feedback_stream",
     ),
@@ -69,7 +69,7 @@ urlpatterns = [
         name="password_reset_complete",
     ),
     path("i18n/", include("django.conf.urls.i18n")),
-    path("save_feedback_session/", save_feedback_session, name="save_feedback_session"),
+    path("save-feedback-session/", save_feedback_session, name="save_feedback_session"),
     path('fetch-related-data/', FetchRelatedDataView.as_view(), name='fetch_related_data'),
     path('policies/', policies, name='policies'),
     # Account page that shows user information

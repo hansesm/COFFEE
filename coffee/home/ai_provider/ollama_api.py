@@ -1,9 +1,10 @@
 import logging
-from typing import Iterable, Optional, Tuple, List, Dict
+from typing import Iterable, Optional, Tuple, List, Dict, Callable
 from ollama import Client
 
 from coffee.home.ai_provider.llm_provider_base import AIBaseClient
 from coffee.home.ai_provider.configs import OllamaConfig
+from coffee.home.ai_provider.models import OllamaUsage, CoffeeUsage
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,8 @@ class OllamaClient(AIBaseClient):
             logger.exception("Ollama list() fehlgeschlagen")
             return False, f"Verbindungsfehler: {e!s}"
 
-    def stream(self, model_name: str, user_input: str, system_prompt: str) -> Iterable[str]:
+    def stream(self, model_name: str, user_input: str, system_prompt: str,
+               on_usage_report: Optional[Callable[[CoffeeUsage], None]] = None, ) -> Iterable[str]:
         """
         Streamt `message.content`-Deltas.
         """
@@ -81,12 +83,24 @@ class OllamaClient(AIBaseClient):
                 },
             )
             for chunk in stream:
-                try:
+                if chunk.get("message", {}).get("content"):
                     yield chunk["message"]["content"]
-                except Exception:
-                    # Ein kaputter Chunk soll den Stream nicht abbrechen
-                    logger.debug("Unerwartete Stream-Struktur: %r", chunk, exc_info=True)
-                    continue
+
+                if chunk.get("done"):
+                    try:
+                        usage = OllamaUsage.from_ollama_payload(chunk)
+                        if on_usage_report:
+                            on_usage_report(CoffeeUsage(tokens_used_system=usage.prompt_eval_count,
+                                                        tokens_used_completion=usage.eval_count,
+                                                        prompt_duration_ns=usage.prompt_duration_ns,
+                                                        total_duration_ns=usage.total_duration_ns))
+
+                        logger.info(
+                            "Ollama Usage: prompt=%s, completion=%s, total=%sns",
+                            usage.prompt_tokens, usage.completion_tokens, usage.total_duration_ns
+                        )
+                    except Exception:
+                        logger.debug("Konnte Usage aus letztem Chunk nicht lesen", exc_info=True)
         except Exception as e:
             logger.exception("Ollama Streaming Fehler")
             yield f"Ollama streaming error: {e!s}"
