@@ -1,10 +1,13 @@
 import json
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import Group
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from coffee.home.security.encryption import EncryptedTextField
@@ -114,6 +117,52 @@ class LLMProvider(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
+    token_limit = models.PositiveBigIntegerField(
+        default=0,
+        help_text="Max. Tokens per Interval. 0 = No Limit."
+    )
+    token_reset_interval = models.DurationField(
+        default=timedelta(hours=24),
+        help_text="Reset-Interval (e.g. 24h)."
+    )
+    reset_anchor_at = models.DateTimeField(null=True, blank=True)
+
+    def quota_window_start(self, now=None):
+        now = now or timezone.now()
+        start = now - self.token_reset_interval
+        if self.reset_anchor_at:
+            start = max(start, self.reset_anchor_at)
+        return start
+
+    def used_tokens_soft(self, now=None) -> int:
+        """Summe der in der Fensterzeit verbrauchten Tokens (system + user + completion)."""
+        if self.token_limit == 0:
+            return 0
+        start = self.quota_window_start(now)
+
+        qs = FeedbackSession.objects.filter(
+            provider=self,
+            timestamp__gte=start,
+        )
+
+        agg = qs.aggregate(
+            sys=Coalesce(Sum("tokens_used_system"), 0),
+            usr=Coalesce(Sum("tokens_used_user"), 0),
+            comp=Coalesce(Sum("tokens_used_completion"), 0),
+        )
+        return int(agg["sys"] + agg["usr"] + agg["comp"])
+
+    def under_limit_soft(self, planned_tokens: int = 0) -> bool:
+        if self.token_limit == 0:
+            return True
+        return (self.used_tokens_soft() + planned_tokens) <= self.token_limit
+
+    def remaining_tokens_soft(self, planned_tokens: int = 0):
+        if self.token_limit == 0:
+            return None  # unlimited
+        rem = self.token_limit - self.used_tokens_soft() - planned_tokens
+        return max(0, rem)
+
     class Meta:
         verbose_name = "LLM Provider"
         verbose_name_plural = "LLM Providers"
@@ -190,6 +239,14 @@ class LLMModel(models.Model):
                  .exclude(pk=self.pk)
                  .filter(is_default=True)
                  .update(is_default=False))
+
+    @classmethod
+    def get_default(cls):
+        try:
+            return cls.objects.get(is_default=True)
+        except ObjectDoesNotExist:
+            # Fallback: take first active model
+            return cls.objects.filter(is_active=True).first()
 
     class Meta:
         verbose_name = "LLM Model"
@@ -315,11 +372,32 @@ class FeedbackSession(models.Model):
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL,
                                db_index=True)  # Indexed for foreign key lookups
 
+    llm_model = models.ForeignKey(
+        LLMModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="llm_modell",
+    )
+    provider = models.ForeignKey(
+        LLMProvider,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="llm_provider",
+    )
+    tokens_used_system = models.PositiveBigIntegerField(default=0)
+    tokens_used_user = models.PositiveBigIntegerField(default=0)
+    tokens_used_completion = models.PositiveBigIntegerField(default=0)
+
+    @property
+    def tokens_used_total(self) -> int:
+        return (self.tokens_used_system or 0) + (self.tokens_used_user or 0) + (self.tokens_used_completion or 0)
+
     class Meta:
         ordering = ["-timestamp"]  # Most recent first
         indexes = [
             models.Index(fields=['course', 'timestamp'], name='idx_fbsess_course_timestamp'),
             models.Index(fields=['feedback', 'timestamp'], name='idx_fbsess_feedback_timestamp'),
+            models.Index(fields=['provider', 'timestamp'], name='idx_fbsess_provider_timestamp'),
         ]
 
     def __str__(self):

@@ -1,8 +1,5 @@
 import logging
 from django.conf import settings
-from coffee.home.ai_provider.ollama_api import list_models as list_ollama_models, stream_chat_response as stream_ollama_response
-from coffee.home.ai_provider.azure_openai_api import list_azure_models, stream_azure_response
-from coffee.home.ai_provider.azure_ai_api import list_azure_ai_models, stream_azure_ai_response
 
 def get_all_available_models():
     """
@@ -95,25 +92,3 @@ def stream_llm_response(model_name, backend, user_input, system_prompt):
         error_msg = f"LLM backend error: {str(e)}"
         logging.error(error_msg)
         yield error_msg
-
-def parse_model_backend(llm_field):
-    """
-    Parse the LLM field to extract model name and backend.
-    Expected formats:
-    - "model_name::ollama" (explicit backend)
-    - "model_name::azure_openai" (explicit backend)
-    - "model_name::azure_ai" (explicit backend)
-    - "model_name" (defaults to ollama for backward compatibility)
-    
-    Args:
-        llm_field: String from criteria.llm field
-    
-    Returns:
-        tuple: (model_name, backend)
-    """
-    if "::" in llm_field:
-        model_name, backend = llm_field.split("::", 1)
-        return model_name.strip(), backend.strip()
-    else:
-        # Default to ollama for backward compatibility
-        return llm_field.strip(), 'ollama'
