@@ -2,6 +2,7 @@ import json
 import uuid
 from datetime import timedelta
 
+import django
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
@@ -125,24 +126,45 @@ class LLMProvider(models.Model):
         default=timedelta(hours=24),
         help_text="Reset-Interval (e.g. 24h)."
     )
-    reset_anchor_at = models.DateTimeField(null=True, blank=True)
+    last_reset_at = models.DateTimeField(null=True, blank=True, default=django.utils.timezone.now)
 
-    def quota_window_start(self, now=None):
-        now = now or timezone.now()
-        start = now - self.token_reset_interval
-        if self.reset_anchor_at:
-            start = max(start, self.reset_anchor_at)
-        return start
+    @transaction.atomic
+    def reset_quota(self, at=None, save=True):
+        self.last_reset_at = at or timezone.now()
+        if save:
+            self.save(update_fields=["last_reset_at"])
+        return self.last_reset_at
 
-    def used_tokens_soft(self, now=None) -> int:
+    @transaction.atomic
+    def roll_window_optimistic(self) -> bool:
+        now = timezone.now()
+        start, end = self.quota_window_bounds()
+        if now > end:
+            updated = (
+                LLMProvider.objects
+                .filter(pk=self.pk)
+                .update(last_reset_at=now)
+            )
+            if updated:
+                self.last_reset_at = now
+                return True
+        return False
+
+    def quota_window_bounds(self):
+        start = self.last_reset_at
+        end = start + self.token_reset_interval
+        return start, end
+
+    def used_tokens_soft(self) -> int:
         """Summe der in der Fensterzeit verbrauchten Tokens (system + user + completion)."""
         if self.token_limit == 0:
             return 0
-        start = self.quota_window_start(now)
+        start, end = self.quota_window_bounds()
 
-        qs = FeedbackSession.objects.filter(
+        qs = FeedbackCriterionResult.objects.filter(
             provider=self,
-            timestamp__gte=start,
+            created_at__gte=start,
+            created_at__lt=end,
         )
 
         agg = qs.aggregate(
@@ -152,10 +174,10 @@ class LLMProvider(models.Model):
         )
         return int(agg["sys"] + agg["usr"] + agg["comp"])
 
-    def under_limit_soft(self, planned_tokens: int = 0) -> bool:
+    def soft_limit_exceeded(self, planned_tokens: int = 0) -> bool:
         if self.token_limit == 0:
-            return True
-        return (self.used_tokens_soft() + planned_tokens) <= self.token_limit
+            return False
+        return (self.used_tokens_soft() + planned_tokens) >= self.token_limit
 
     def remaining_tokens_soft(self, planned_tokens: int = 0):
         if self.token_limit == 0:
@@ -372,33 +394,64 @@ class FeedbackSession(models.Model):
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL,
                                db_index=True)  # Indexed for foreign key lookups
 
+    class Meta:
+        verbose_name = "Feedback Session"
+        verbose_name_plural = "Feedback Sessions"
+        ordering = ["-timestamp"]  # Most recent first
+        indexes = [
+            models.Index(fields=['course', 'timestamp'], name='idx_fbsess_course_timestamp'),
+            models.Index(fields=['feedback', 'timestamp'], name='idx_fbsess_feedback_timestamp'),
+        ]
+
+    def __str__(self):
+        return f"Session {self.id} at {self.timestamp}"
+
+class FeedbackCriterionResult(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    session = models.ForeignKey(
+        FeedbackSession, on_delete=models.CASCADE,
+        related_name="criteria_results", db_index=True
+    )
+    # Client-seitige Kriteriums-ID (aus feedback_data.criteria[i].id)
+    client_criterion_id = models.UUIDField(db_index=True)
+
+    title = models.TextField(blank=True, null=True)
+
+    # Antwort
+    ai_response = models.TextField(blank=True, null=True)
+
+    # LLM / Provider (optional direkte FKs; alternativ: strings)
     llm_model = models.ForeignKey(
-        LLMModel,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="llm_modell",
+        LLMModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="criterion_results"
     )
     provider = models.ForeignKey(
-        LLMProvider,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="llm_provider",
+        LLMProvider, on_delete=models.SET_NULL, null=True, blank=True, related_name="criterion_results"
     )
+    llm_external_name = models.TextField(blank=True, null=True)  # z.B. "phi4:latest"
+
+    # Usage (normalisiert, gleiche Semantik wie Session)
     tokens_used_system = models.PositiveBigIntegerField(default=0)
     tokens_used_user = models.PositiveBigIntegerField(default=0)
     tokens_used_completion = models.PositiveBigIntegerField(default=0)
+
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Feedback Criteria Result"
+        verbose_name_plural = "Feedback Criteria Results"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "client_criterion_id"],
+                name="uq_critresult_session_clientid",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["llm_model", "created_at"], name="idx_crit_llm_time"),
+            models.Index(fields=["provider", "created_at"], name="idx_crit_provider_time"),
+        ]
 
     @property
     def tokens_used_total(self) -> int:
         return (self.tokens_used_system or 0) + (self.tokens_used_user or 0) + (self.tokens_used_completion or 0)
 
-    class Meta:
-        ordering = ["-timestamp"]  # Most recent first
-        indexes = [
-            models.Index(fields=['course', 'timestamp'], name='idx_fbsess_course_timestamp'),
-            models.Index(fields=['feedback', 'timestamp'], name='idx_fbsess_feedback_timestamp'),
-            models.Index(fields=['provider', 'timestamp'], name='idx_fbsess_provider_timestamp'),
-        ]
-
-    def __str__(self):
-        return f"Session {self.id} at {self.timestamp}"

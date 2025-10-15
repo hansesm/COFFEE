@@ -1,4 +1,6 @@
-from coffee.home.models import FeedbackSession
+from django.db import transaction
+
+from coffee.home.models import FeedbackSession, FeedbackCriterionResult
 
 
 def check_permissions_and_group(user, instance, permission_codename):
@@ -88,59 +90,86 @@ class FetchRelatedDataView(View):
 # -------------------------------------------------------------------------
 # Feedback Session Save
 # -------------------------------------------------------------------------
-
 def save_feedback_session(request):
-    if request.method == "POST":
-        try:
-            # Ensure the session is saved for anonymous users
-            if not request.session.session_key:
-                request.session.save()  # create a session key if it doesn't exist
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
 
-            data = json.loads(request.body)
-            feedback_data = data.get("feedback_data")
-            if not feedback_data:
-                return JsonResponse({"error": "feedback_data is missing or invalid"}, status=400)
+    try:
+        # Ensure the session is saved for anonymous users
+        if not request.session.session_key:
+            request.session.save()
 
-            staff_user = request.user.username if request.user.is_authenticated else None
-            feedback_id = feedback_data.get("feedback_id")
-            course_id = feedback_data.get("course_id")
-            user_input = feedback_data.get("user_input", "")
-            nps_score = feedback_data.get("nps_score")
+        data = json.loads(request.body)
+        feedback_data = data.get("feedback_data")
+        if not isinstance(feedback_data, dict):
+            return JsonResponse({"error": "feedback_data is missing or invalid"}, status=400)
 
-            # Build our new FeedbackSession
+        staff_user = request.user.username if request.user.is_authenticated else None
+        feedback_id = feedback_data.get("feedback_id")
+        course_id = feedback_data.get("course_id")
+        user_input = feedback_data.get("user_input", "")
+        nps_score = feedback_data.get("nps_score")
+
+        # Session anlegen + Criteria-Rows in einer TX speichern
+        with transaction.atomic():
+            # 1) Session erstmal speichern (inkl. Rohdaten für Backward-Compat)
             new_session = FeedbackSession(
                 feedback_data=feedback_data,
                 submission=user_input,
                 nps_score=nps_score,
                 staff_user=staff_user,
-                session_key=request.session.session_key
+                session_key=request.session.session_key,
             )
 
-            # Link the Feedback if present
+            # Links setzen (best effort)
             if feedback_id:
                 try:
-                    feedback_obj = Feedback.objects.get(id=feedback_id)
-                    new_session.feedback = feedback_obj
+                    new_session.feedback = Feedback.objects.get(id=feedback_id)
                 except Feedback.DoesNotExist:
                     pass
 
-            # Link the Course if present
             if course_id:
                 try:
-                    course_obj = Course.objects.get(id=course_id)
-                    new_session.course = course_obj
+                    new_session.course = Course.objects.get(id=course_id)
                 except Course.DoesNotExist:
                     pass
 
-            # Save the new session first
             new_session.save()
 
-            # If we received an NPS rating, delete the "old" incomplete session
-            #      that has the same session_key (and optionally same feedback).
-            #      We only delete sessions that do NOT have an NPS score.
-            if nps_score:  # or `if nps_score is not None:`
-                # For example, restrict to the same session_key & feedback
-                # and no nps_score set previously:
+            # 2) Kriterien aus feedback_data in FeedbackCriterionResult ablegen
+            crit_rows = []
+            for crit in (feedback_data.get("criteria") or []):
+                u = crit.get("usage") or {}
+                llm_external = crit.get("llm") #TODO get llm via FK
+
+                llm_obj = None
+                provider_obj = None
+                if llm_external:
+                    try:
+                        llm_obj = LLMModel.objects.get(external_name=llm_external)
+                        provider_obj = llm_obj.provider
+                    except LLMModel.DoesNotExist:
+                        pass
+
+                client_uuid = crit.get("id")
+                crit_rows.append(FeedbackCriterionResult(
+                    session=new_session,
+                    client_criterion_id=client_uuid,
+                    title=crit.get("title") or "",
+                    ai_response=crit.get("ai_response") or "",
+                    llm_model=llm_obj,
+                    provider=provider_obj,
+                    llm_external_name=llm_external,
+                    tokens_used_system=int(u.get("tokens_used_system") or 0),
+                    tokens_used_user=int(u.get("tokens_used_user") or 0),
+                    tokens_used_completion=int(u.get("tokens_used_completion") or 0)
+                ))
+
+            if crit_rows:
+                FeedbackCriterionResult.objects.bulk_create(crit_rows, ignore_conflicts=True)
+
+            # 5) NPS-Cleanup wie gehabt
+            if nps_score:
                 FeedbackSession.objects.filter(
                     session_key=request.session.session_key,
                     feedback_id=feedback_id,
@@ -148,17 +177,15 @@ def save_feedback_session(request):
                     nps_score__isnull=True
                 ).exclude(id=new_session.id).delete()
 
-            return JsonResponse({
-                "message": "Feedback session saved successfully",
-                "session_id": str(new_session.id)
-            })
+        return JsonResponse({
+            "message": "Feedback session saved successfully",
+            "session_id": str(new_session.id)
+        })
 
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON in request body"}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON in request body"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 # -------------------------------------------------------------------------

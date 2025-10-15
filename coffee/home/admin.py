@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from coffee.home.models import LLMModel, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, \
-    Course, LLMProvider
+    Course, LLMProvider, FeedbackCriterionResult
 from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
 from coffee.home.registry import SCHEMA_REGISTRY
 
@@ -18,6 +18,7 @@ admin.site.register(Criteria)
 admin.site.register(Feedback)
 admin.site.register(FeedbackCriteria)
 admin.site.register(FeedbackSession)
+admin.site.register(FeedbackCriterionResult)
 admin.site.register(Course)
 
 
@@ -47,6 +48,11 @@ def schema_help(schema_cls):
         lines.append(f"- <code>{name}</code> ({typ}, default: {default}) {desc}")
     return "<br>".join(lines)
 
+
+@admin.action(description="Reset token quota window now")
+def reset_quota_now(modeladmin, request, queryset):
+    for p in queryset:
+        p.reset_quota()
 
 class LLMProviderAdminForm(forms.ModelForm):
     class Meta:
@@ -123,6 +129,7 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     list_filter = ("type", "is_active")
     search_fields = ("name", "endpoint")
     inlines = [ProviderModelsInline]
+    actions = [reset_quota_now]
 
     def get_fields(self, request, obj=None):
         return [
@@ -149,17 +156,40 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     @admin.display(description="Quota (soft)")
     def quota_soft(self, obj):
         if obj.token_limit == 0:
-            return "unlimited"
-        return f"{obj.used_tokens_soft()} / {obj.token_limit}"
+            return format_html('<span style="color:gray;">unlimited</span>')
+
+        used = obj.used_tokens_soft()
+        limit = obj.token_limit
+        percent = used / limit if limit else 0
+
+        if used > limit:
+            color = "#b00"  # rot: exceeded
+            weight = "bold"
+        elif percent > 0.9:
+            color = "#e67e22"  # orange: >90%
+            weight = "bold"
+        elif percent > 0.7:
+            color = "#f1c40f"  # gelb: >70%
+            weight = "normal"
+        else:
+            color = "#2ecc71"  # grün: ok
+            weight = "normal"
+
+        used_str = f"{used:,}"
+        limit_str = f"{limit:,}"
+
+        return format_html(
+            '<span style="color:{}; font-weight:{};">{} / {}</span>',
+            color, weight, used_str, limit_str
+        )
 
     @admin.display(description="Next reset")
     def next_reset_eta(self, obj):
         if obj.token_limit == 0:
             return "—"
-        start = obj.quota_window_start()
-        eta = start + obj.token_reset_interval
-        overdue = timezone.now() >= eta
-        text = eta.strftime("%Y-%m-%d %H:%M")
+        start, end = obj.quota_window_bounds()
+        overdue = timezone.now() >= end
+        text = timezone.localtime(end).strftime("%d.%m.%Y %H:%M")
         return format_html(
             '<span style="{}">{}</span>',
             "color:#b00;font-weight:600;" if overdue else "",

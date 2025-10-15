@@ -206,67 +206,131 @@
             llm: criteriaLlm
           });
 
-          // --- fetch-Streaming statt XHR ---
-  (async () => {
-    const responseFieldStart = responseField.val();  // falls schon Text da ist
-    let acc = responseFieldStart || '';
+(async () => {
+  const responseFieldStart = responseField.val() || '';
+  let acc = responseFieldStart;
 
-    // Body wie bisher (x-www-form-urlencoded)
-    const formData = new URLSearchParams();
-    formData.append('user_input', userInput);
+  const formData = new URLSearchParams();
+  formData.append('user_input', userInput);
 
-    // Timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 600000);
 
-    try {
-      const res = await fetch(`/feedback_stream/${uuid}/${criteriaId}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: formData.toString(),
-        signal: controller.signal
-      });
+  try {
+    const res = await fetch(`/feedback-stream/${uuid}/${criteriaId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: formData.toString(),
+      signal: controller.signal
+    });
 
-      if (!res.ok || !res.body) {
-        responseField.val('An error occurred. Please try again.');
-        return;
+    if (!res.ok || !res.body) {
+      const errText = await res.text();
+      responseField.val(errText || 'An error occurred. Please try again.');
+      return;
+    }
+
+    // --- SSE Parser (minimal, RFC-konform genug) ---
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let curEvent = 'message';
+    let curData = [];
+
+    const dispatch = (event, dataStr) => {
+      // Daten sind ggf. mehrzeilig; wir erwarten JSON
+      let payload = null;
+      try { payload = dataStr ? JSON.parse(dataStr) : null; } catch {}
+      switch (event) {
+        case 'delta':
+          if (payload?.text) {
+            acc += payload.text;
+            responseField.val(acc);
+          }
+          break;
+        case 'usage':
+          {
+            const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
+            if (criterion) criterion.usage = payload;
+          }
+          break;
+        case 'error':
+          console.error('SSE error event', payload);
+          break;
+        case 'end':
+          // optional: irgendwas beim Ende
+          break;
+        default:
+          // unbekannte Events ignorieren
+          break;
       }
+    };
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        if (chunk) {
-          acc += chunk;
-          // effizient: Delta anhängen, nicht jedes Mal komplett ersetzen
-          responseField.val(acc);
+      // Zeilenweise parsen
+      let nl;
+      while ((nl = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+
+        const trimmed = line.replace(/\r$/, '');
+
+        if (trimmed === '') {
+          // Event abschließen
+          if (curData.length > 0) {
+            dispatch(curEvent, curData.join('\n'));
+          }
+          curEvent = 'message';
+          curData = [];
+          continue;
         }
-      }
 
-      // in feedbackData speichern
-      const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
-      if (criterion) criterion.ai_response = acc;
+        if (trimmed.startsWith(':')) {
+          // Kommentar/Heartbeat -> ignorieren
+          continue;
+        }
 
-    } catch (err) {
-      console.error('Stream error for criteria', criteriaId, err);
-      responseField.val('Error fetching response.');
-    } finally {
-      clearTimeout(timeoutId);
-      // entspricht deinem xhr.onloadend:
-      completedRequests++;
-      if (completedRequests === totalRequests) {
-        $('#topLoadingBar').fadeOut();
-        $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
-        saveFeedbackSession(feedbackData);
+        const colon = trimmed.indexOf(':');
+        const field = colon === -1 ? trimmed : trimmed.slice(0, colon);
+        const rawVal = colon === -1 ? '' : trimmed.slice(colon + 1);
+        const valueStr = rawVal.startsWith(' ') ? rawVal.slice(1) : rawVal;
+
+        if (field === 'event') {
+          curEvent = valueStr || 'message';
+        } else if (field === 'data') {
+          curData.push(valueStr);
+        } // id / retry könntest du bei Bedarf auch auswerten
       }
     }
-  })();
+
+    // Reste (falls Response ohne Abschlussleerzeile endet)
+    if (curData.length > 0) dispatch(curEvent, curData.join('\n'));
+
+    // final speichern
+    const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
+    if (criterion) criterion.ai_response = acc;
+
+  } catch (err) {
+    console.error('Stream error for criteria', criteriaId, err);
+    responseField.val('Error fetching response.');
+  } finally {
+    clearTimeout(timeoutId);
+    completedRequests++;
+    if (completedRequests === totalRequests) {
+      $('#topLoadingBar').fadeOut();
+      $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
+      saveFeedbackSession(feedbackData);
+    }
+  }
+})();
+
 
         });
       });
@@ -301,7 +365,7 @@
     // Save feedback session
     function saveFeedbackSession(feedbackData) {
       $.ajax({
-        url: '/save_feedback_session/',
+        url: '/save-feedback-session/',
         method: 'POST',
         data: JSON.stringify({ feedback_data: feedbackData }),
         contentType: 'application/json',

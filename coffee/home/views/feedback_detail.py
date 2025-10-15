@@ -8,6 +8,7 @@ from django.http import (
     StreamingHttpResponse, Http404,
 )
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from coffee.home.forms import (
     FeedbackSessionForm,
@@ -21,7 +22,8 @@ from coffee.home.ai_provider.llm_provider_base import AIBaseClient
 from coffee.home.models import LLMModel
 from coffee.home.registry import SCHEMA_REGISTRY
 from coffee.home.models import LLMProvider
-from home.ai_provider.models import CoffeeUsage
+from coffee.home.ai_provider.models import CoffeeUsage
+from coffee.home.views.streaming import sse_event
 
 
 def feedback(request, id):
@@ -85,66 +87,98 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
 
         provider_config, provider_class = SCHEMA_REGISTRY[provider.type]
         config = provider_config.from_provider(provider)
-        provider: AIBaseClient = provider_class(config)
+        ai_client: AIBaseClient = provider_class(config)
 
         logging.info(f"Using model: {llm_model}")
 
-        def on_usage_report(report: CoffeeUsage):
-            pass
+        loop = asyncio.get_running_loop()
+        q: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=32)
 
-        generator = provider.stream(llm_model.external_name, user_input, custom_prompt, on_usage_report=on_usage_report)
+        def on_usage_report(report: CoffeeUsage):
+            """
+            Wird vom Provider am Ende des Streams aufgerufen.
+            Wir verpacken die Usage als eigenes SSE-Event.
+            """
+            try:
+                data = report.model_dump()
+                asyncio.run_coroutine_threadsafe(q.put(sse_event("usage", data)), loop)
+            except Exception:
+                logging.exception("on_usage_report failed")
+
+        provider: LLMProvider = provider
+        reset_anchor = provider.last_reset_at
+        reset_eta_utc = reset_anchor + provider.token_reset_interval
+        reset_eta_local = timezone.localtime(reset_eta_utc)
+        formatted = reset_eta_local.strftime("%d.%m.%Y %H:%M")
+
+        await sync_to_async(provider.roll_window_optimistic)()
+        quoata_exceeded = await sync_to_async(provider.soft_limit_exceeded)(0)
+        if quoata_exceeded:
+            logging.warning("Quota exceeded")
+            return HttpResponseBadRequest("Quota exceeded. Try again at " + formatted)
+
+
+        generator = ai_client.stream(
+            llm_model.external_name,
+            user_input,
+            custom_prompt,
+            on_usage_report=on_usage_report,  # <— wichtig
+        )
+
+        def feeder():
+            """
+            Läuft im Hintergrundthread, liest den Provider-Generator und schiebt
+            'delta'-Events in die Queue. Das finale 'usage'-Event kommt über on_usage_report().
+            """
+            try:
+                buffer = []
+                for piece in generator:
+                    if not piece:
+                        continue
+                    buffer.append(piece)
+
+                    # Flush heuristisch (wie bei dir): auf Leerzeichen/Zeilenumbruch
+                    if " " in piece or "\n" in piece:
+                        text = "".join(buffer)
+                        asyncio.run_coroutine_threadsafe(
+                            q.put(sse_event("delta", {"text": text})), loop
+                        )
+                        buffer.clear()
+
+                # Rest flushen
+                if buffer:
+                    text = "".join(buffer)
+                    asyncio.run_coroutine_threadsafe(
+                        q.put(sse_event("delta", {"text": text})), loop
+                    )
+
+            except Exception as e:
+                logging.exception("stream feeder failed")
+                asyncio.run_coroutine_threadsafe(
+                    q.put(sse_event("error", {"message": str(e)})), loop
+                )
+            finally:
+                # Signalisiert dem Client das Ende des Streams (nachdem 'usage' gesendet wurde)
+                asyncio.run_coroutine_threadsafe(q.put(sse_event("end", {})), loop)
+                asyncio.run_coroutine_threadsafe(q.put(None), loop)
+
+        threading.Thread(target=feeder, daemon=True).start()
 
         async def async_byte_iter():
-            loop = asyncio.get_running_loop()
-            q: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=8)
-
-            def feeder():
-                try:
-                    buffer = []
-                    for piece in generator:
-                        if not piece:
-                            continue
-
-                        buffer.append(piece)
-
-                        # Flush on spaces or new lines
-                        if " " in piece or "\n" in piece:
-                            data = "".join(buffer).encode("utf-8")
-                            asyncio.run_coroutine_threadsafe(q.put(data), loop)
-                            buffer.clear()
-
-                    # Send rest
-                    if buffer:
-                        data = "".join(buffer).encode("utf-8")
-                        asyncio.run_coroutine_threadsafe(q.put(data), loop)
-
-                except Exception as e:
-                    logging.exception("stream feeder failed")
-                    asyncio.run_coroutine_threadsafe(
-                        q.put(f"[error] {e}\n".encode("utf-8"), loop),
-                        loop,
-                    )
-                finally:
-                    asyncio.run_coroutine_threadsafe(q.put(None), loop)
-
-            threading.Thread(target=feeder, daemon=True).start()
-
-            yield b""
+            # optional: initiales Kommentar-Heartbeat (SSE)
+            yield b": keep-alive\n\n"
             while True:
                 chunk = await q.get()
                 if chunk is None:
                     break
                 yield chunk
 
-        # 2) Wrap the generator in a StreamingHttpResponse
-        streaming_response = StreamingHttpResponse(async_byte_iter(), content_type="text/plain; charset=utf-8")
-
-        # 3) Set headers on the StreamingHttpResponse
-        streaming_response["Cache-Control"] = "no-cache"
-        streaming_response["X-Accel-Buffering"] = "no"
-        streaming_response["Connection"] = "keep-alive"
-
-        return streaming_response
+        # StreamingHttpResponse mit SSE
+        resp = StreamingHttpResponse(async_byte_iter(), content_type="text/event-stream; charset=utf-8")
+        resp["Cache-Control"] = "no-cache"
+        resp["X-Accel-Buffering"] = "no"
+        resp["Connection"] = "keep-alive"
+        return resp
     except Exception as e:
         logging.exception("Error generating streaming response:")
         return HttpResponseBadRequest("An error occurred while generating the response.")
