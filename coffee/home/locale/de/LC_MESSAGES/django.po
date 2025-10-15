@@ -133,7 +133,7 @@ msgid "Staff"
 msgstr "Staff"
 
 #: home/templates/pages/analysis.html:19 home/templates/pages/analysis.html:83
-msgid "NPS Score"
+msgid "Helpfulness Score"
 msgstr "Score"
 
 #: home/templates/pages/analysis.html:43
