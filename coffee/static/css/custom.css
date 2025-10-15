@@ -457,7 +457,7 @@ a:hover {
 }
 
 /***********************************************/
-/* NPS Rating Component */
+/* Helpfulness Score Rating Component */
 .nps-bar {
     flex-wrap: wrap;
 }
@@ -575,7 +575,7 @@ a:hover {
     color: #495057;
 }
 
-/* NPS Rating improvements */
+/* Helpfulness Score Rating improvements */
 .nps-container {
     border-radius: 12px;
 }
@@ -725,7 +725,7 @@ a:hover {
         font-size: 0.9rem;
     }
     
-    /* NPS mobile improvements */
+    /* Helpfulness Score mobile improvements */
     .nps-segment {
         min-width: 28px;
         min-height: 28px;

@@ -390,7 +390,7 @@ class FeedbackSession(models.Model):
     staff_user = models.TextField(null=True, blank=True, db_index=True)  # Indexed for staff filtering
     submission = models.TextField()
     feedback_data = models.JSONField(default=dict)
-    nps_score = models.CharField(max_length=10, blank=True, null=True)
+    helpfulness_score = models.CharField(max_length=10, blank=True, null=True)
     feedback = models.ForeignKey(Feedback, null=True, blank=True, on_delete=models.SET_NULL,
                                  db_index=True)  # Indexed for foreign key lookups
     # This still allows referencing the Course (distinct from the Feedbacks Course if needed)

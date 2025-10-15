@@ -223,7 +223,7 @@ class FeedbackSessionModelTest(TestCase):
         self.feedback_session = FeedbackSession.objects.create(
             submission="print('Hello World')",
             feedback_data={"criteria": []},
-            nps_score="8",
+            helpfulness_score="8",
             staff_user="testuser",
             session_key="test_session_123",
             feedback=self.feedback,
@@ -232,7 +232,7 @@ class FeedbackSessionModelTest(TestCase):
 
     def test_feedback_session_creation(self):
         self.assertEqual(self.feedback_session.submission, "print('Hello World')")
-        self.assertEqual(self.feedback_session.nps_score, "8")
+        self.assertEqual(self.feedback_session.helpfulness_score, "8")
         self.assertEqual(self.feedback_session.staff_user, "testuser")
         self.assertEqual(self.feedback_session.feedback, self.feedback)
         self.assertEqual(self.feedback_session.course, self.course)
@@ -313,7 +313,7 @@ class ViewsTest(TestCase):
                 "feedback_id": str(self.feedback.id),
                 "course_id": str(self.course.id),
                 "user_input": "print('Hello World')",
-                "nps_score": "8",
+                "helpfulness_score": "8",
                 "criteria": []
             }
         }
@@ -330,7 +330,7 @@ class ViewsTest(TestCase):
         # Check that session was created
         self.assertTrue(FeedbackSession.objects.filter(
             submission="print('Hello World')",
-            nps_score="8"
+            helpfulness_score="8"
         ).exists())
 
     @patch('coffee.home.views.stream_chat_response')
@@ -591,7 +591,7 @@ class IntegrationTest(TestCase):
                 "feedback_id": str(feedback.id),
                 "course_id": str(self.course.id),
                 "user_input": "print('Hello World')",
-                "nps_score": "8",
+                "helpfulness_score": "8",
                 "criteria": [
                     {
                         "criteria_id": str(criteria.id),
@@ -612,7 +612,7 @@ class IntegrationTest(TestCase):
         # Verify feedback session was created
         feedback_session = FeedbackSession.objects.get(
             submission="print('Hello World')",
-            nps_score="8"
+            helpfulness_score="8"
         )
         self.assertEqual(feedback_session.feedback, feedback)
         self.assertEqual(feedback_session.course, self.course)

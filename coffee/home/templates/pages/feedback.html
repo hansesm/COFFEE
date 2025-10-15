@@ -68,11 +68,11 @@
         <div id="feedbackSections" class="col-12 col-lg-6 mb-3 feedback-sections">
             <div id="feedbackContainer"
                  data-username="{{ request.user.username|default:'' }}"></div>
-            <!-- NPS Rating Section (now a bar of segments) -->
+            <!-- Helpfulness Score Rating Section (now a bar of segments) -->
             <div id="npsContainer" class="card feedback-card nps-container shadow-sm mb-3">
                 <div class="card-body text-center">
                     <h5 class="card-title">{% trans 'How helpful was this feedback for you?' %}</h5>
-                    <!-- NPS Bar -->
+                    <!-- Helpfulness Score Bar -->
                     <div id="npsBar"
                          class="nps-bar d-flex justify-content-center align-items-center my-3 flex-wrap">
                         {% for score in scores %}
@@ -163,7 +163,7 @@
           title: "{{ feedbackcriteria_set.0.feedback.task.title|escapejs }}"
         },
         criteria: [],
-        nps_score: null
+        helpfulness_score: null
       };
 
       // Handle form submission
@@ -335,7 +335,7 @@
         });
       });
 
-      // Handle NPS score selection: now uses .nps-segment
+      // Handle Helpfulness score selection: now uses .nps-segment
       document.querySelectorAll('.nps-segment').forEach(function (segment) {
         segment.addEventListener('click', function () {
           // Remove 'nps-selected' from all segments
@@ -346,7 +346,7 @@
           this.classList.add('nps-selected');
 
           // Set the selected score and save
-          feedbackData.nps_score = this.dataset.score;
+          feedbackData.helpfulness_score = this.dataset.score;
           saveFeedbackSession(feedbackData);
         });
       });

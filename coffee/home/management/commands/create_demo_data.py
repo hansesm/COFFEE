@@ -451,7 +451,7 @@ class Command(BaseCommand):
             "The solution handles edge cases and includes comprehensive error checking."
         ]
         
-        nps_scores = ['1', '2', '3', '4', '5']
+        helpfulness_score = ['1', '2', '3', '4', '5']
         
         for course in self.demo_courses:
             feedbacks = Feedback.objects.filter(course=course)
@@ -466,7 +466,7 @@ class Command(BaseCommand):
                         'criteria_2': {'response': 'Algorithm is correct but could be optimized.', 'score': 7},
                         'criteria_3': {'response': 'Mathematical concepts are well understood.', 'score': 9}
                     },
-                    nps_score=nps_scores[i % len(nps_scores)],
+                    helpfulness_score=helpfulness_score[i % len(helpfulness_score)],
                     session_key=f"demo_session_{i}",
                     timestamp=timezone.now()
                 )

@@ -108,7 +108,7 @@ def save_feedback_session(request):
         feedback_id = feedback_data.get("feedback_id")
         course_id = feedback_data.get("course_id")
         user_input = feedback_data.get("user_input", "")
-        nps_score = feedback_data.get("nps_score")
+        helpfulness_score = feedback_data.get("helpfulness_score")
 
         # Session anlegen + Criteria-Rows in einer TX speichern
         with transaction.atomic():
@@ -116,7 +116,7 @@ def save_feedback_session(request):
             new_session = FeedbackSession(
                 feedback_data=feedback_data,
                 submission=user_input,
-                nps_score=nps_score,
+                helpfulness_score=helpfulness_score,
                 staff_user=staff_user,
                 session_key=request.session.session_key,
             )
@@ -168,13 +168,12 @@ def save_feedback_session(request):
             if crit_rows:
                 FeedbackCriterionResult.objects.bulk_create(crit_rows, ignore_conflicts=True)
 
-            # 5) NPS-Cleanup wie gehabt
-            if nps_score:
+            if helpfulness_score:
                 FeedbackSession.objects.filter(
                     session_key=request.session.session_key,
                     feedback_id=feedback_id,
                     submission=user_input,
-                    nps_score__isnull=True
+                    helpfulness_score__isnull=True
                 ).exclude(id=new_session.id).delete()
 
         return JsonResponse({
@@ -214,7 +213,7 @@ class FeedbackSessionAnalysisView(ManagerRequiredMixin, View):
                 "timestamp": session.timestamp.strftime("%d.%m.%Y %H:%M:%S"),
                 "staff": session.staff_user or "anonymous",
                 "submission": session.submission or "",
-                "nps": session.nps_score or "",
+                "nps": session.helpfulness_score or "",
                 "course": session.course.course_name if session.course else "N/A",
                 "task": session.feedback.task.title if session.feedback and session.feedback.task else "N/A",
                 "criteria_json": criteria_json,
@@ -251,14 +250,14 @@ class FeedbackSessionCSVView(ManagerRequiredMixin, View):
             task_title = fs.feedback.task.title if fs.feedback and fs.feedback.task else "N/A"
             staff_user = fs.staff_user or "Student"
             submission = fs.submission or ""
-            nps_score = fs.nps_score or ""
+            helpfulness_score = fs.helpfulness_score or ""
             writer.writerow([
                 timestamp,
                 course_name,
                 task_title,
                 staff_user,
                 submission,
-                nps_score,
+                helpfulness_score,
                 data_string
             ])
 
@@ -346,8 +345,8 @@ def feedback_pdf_download(request, feedback_session_id):
             [_('Date:'), session.timestamp.astimezone(pytz.timezone('Europe/Berlin')).strftime('%d.%m.%Y %H:%M:%S')],
         ]
 
-        if session.nps_score:
-            header_data.append([_('Rating:'), f"{session.nps_score}/10"])
+        if session.helpfulness_score:
+            header_data.append([_('Rating:'), f"{session.helpfulness_score}/10"])
 
         header_table = Table(header_data, colWidths=[1.5 * inch, 4 * inch])
         header_table.setStyle(TableStyle([
