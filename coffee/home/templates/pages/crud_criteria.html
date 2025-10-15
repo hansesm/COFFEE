@@ -34,14 +34,14 @@
                   data-description="{{ criteria.description }}"
                   data-active="{{ criteria.active }}"
                   data-prompt="{{ criteria.prompt }}"
-                  data-llm="{{ criteria.llm }}"
+                  data-llm_fk="{{ criteria.llm_fk.provider.name }}: {{ criteria.llm_fk.name }}"
                   data-sequels="{{ criteria.sequels }}"
                   data-tag="{{ criteria.tag }}"
                   data-course_id="{{ criteria.course.id }}"
                   data-course_name="{{ criteria.course.course_name }}">
                 <td>{{ criteria.course.course_name }}</td>
                 <td>{{ criteria.title }}</td>
-                <td>{{ criteria.llm }}</td>
+                <td>{{ criteria.llm_fk.provider.name }}: {{ criteria.llm_fk.name }}</td>
                 <td>{{ criteria.tag }}</td>
                 <td>{{ criteria.active }}</td>
               </tr>
@@ -98,7 +98,7 @@
                     <option value="" disabled selected>{% trans 'No models available' %}</option>
                   {% else %}
                     <option value="">{% trans 'Select Language Model' %}</option>
-                    {% for model in llm_models %}<option value="{{ model.name }}::{{ model.backend }}">{{ model.display_name }}</option>{% endfor %}
+                    {% for model in llm_models %}<option value="{{ model.pk }}">{{ model.provider.name }}: {{ model.name }}</option>{% endfor %}
                   {% endif %}
                 </select>
                 {% if llm_models_error %}
