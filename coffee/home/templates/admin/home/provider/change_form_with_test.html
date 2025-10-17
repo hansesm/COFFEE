@@ -1,6 +1,88 @@
 {% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
 
-{% block submit_buttons_bottom %}
+{# Button rechts oben in der Object-Tools-Leiste #}
+{% block object-tools-items %}
   {{ block.super }}
-  <input type="submit" name="_test_connection" class="default" value="Connection Test"/>
+  <li>
+    <a href="#" class="button" id="btn-test-connection">
+      {% trans "Test connection" %}
+    </a>
+  </li>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.getElementById('btn-test-connection');
+  if (!btn) return;
+
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const form = document.getElementById('{{ opts.model_name }}_form') || document.querySelector('form');
+    if (!form) { alert('Form not found'); return; }
+
+    const csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+    const csrf = csrfInput ? csrfInput.value : null;
+
+    // URL je nach Add/Change-View (du hast das oben schon so angelegt)
+    const url = "{% if original and original.pk %}{% url 'admin:home_llmprovider_test_connection' original.pk %}{% else %}{% url 'admin:home_llmprovider_test_connection_new' %}{% endif %}";
+
+    const fd = new FormData(form);
+
+    const oldLabel = btn.textContent;
+    btn.classList.add('disabled');
+    btn.textContent = "{{ _('Testing...') }}";
+
+    fetch(url, {
+      method: 'POST',
+      body: fd,
+      credentials: 'same-origin', // Cookies mitschicken (wichtig für CSRF/Auth)
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrf ? {'X-CSRFToken': csrf} : {})
+      }
+    })
+    .then(async (res) => {
+      const ctype = res.headers.get('content-type') || '';
+      const raw = await res.text();
+
+      // Falls kein JSON (z. B. HTML-Fehlerseite / Redirect), schöner Fehlertext:
+      let data = null;
+      if (ctype.includes('application/json')) {
+        try { data = JSON.parse(raw); } catch (e) { /* noop */ }
+      }
+
+      if (!res.ok) {
+        const shortTxt = raw.slice(0, 300);
+        throw new Error(`HTTP ${res.status} ${res.statusText}\n${shortTxt}`);
+      }
+      if (!data) {
+        const shortTxt = raw.slice(0, 300);
+        throw new Error(`Expected JSON but got:\n${shortTxt}`);
+      }
+      return data;
+    })
+    .then((data) => {
+      if (data.ok) {
+        alert("✅ {{ _('Connection OK') }}: " + (data.message || ''));
+      } else {
+        const msg = data.message || (data.errors ? JSON.stringify(data.errors) : 'Unknown error');
+        alert("❌ {{ _('Connection failed') }}: " + msg);
+      }
+    })
+    .catch((err) => {
+      console.error('Test connection failed:', err);
+      alert("❌ {{ _('Request failed') }}: " + err.message);
+    })
+    .finally(() => {
+      btn.classList.remove('disabled');
+      btn.textContent = oldLabel;
+    });
+  });
+});
+</script>
+
 {% endblock %}

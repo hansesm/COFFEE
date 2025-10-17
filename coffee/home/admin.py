@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse, path
 from django.utils import timezone
@@ -68,41 +69,15 @@ class LLMProviderAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         provider_type = self.data.get("type") or getattr(self.instance, "type", None)
-        if provider_type:
-            schema_cls = SCHEMA_REGISTRY.get(provider_type)
-            schema_cls = schema_cls[0]
-        else:
-            schema_cls = SCHEMA_REGISTRY.get(ProviderType.OLLAMA)[0]
-
-
-        # JSON initial befüllen
+        schema_cls = (SCHEMA_REGISTRY.get(provider_type) or SCHEMA_REGISTRY.get(ProviderType.OLLAMA))[0]
         if self.instance and self.instance.config:
             self.fields["config"].initial = self.instance.config
-
-        # Hilfetext aus Pydantic-Schema
-        if schema_cls:
-            self.fields["config"].help_text = schema_help(schema_cls)
-        else:
-            self.fields["config"].help_text = f"Free JSON (no registriertes Schema for '{provider_type}')."
+        self.fields["config"].help_text = schema_help(schema_cls) if schema_cls else \
+            f"Free JSON (no registriertes Schema for '{provider_type}')."
 
     def clean(self):
         cleaned = super().clean()
-
-        data = {f.name: getattr(self.instance, f.name, None) for f in self.instance._meta.fields}
-        data.update(cleaned)
-
-        # Secret-Feld: empty api_key in form => use old value
-        if self.instance.pk and not cleaned.get("api_key"):
-            data["api_key"] = LLMProvider.objects.get(pk=self.instance.pk).api_key
-
-        temp = LLMProvider(**data)
-
-        ok, msg = test_provider_connection(temp)
-        if not ok:
-            raise ValidationError({"endpoint": f"Connection check failed: {msg}"})
-
         return cleaned
 
 class ProviderModelsInline(admin.TabularInline):
@@ -132,6 +107,7 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     search_fields = ("name", "endpoint")
     inlines = [ProviderModelsInline]
     actions = [reset_quota_now]
+    change_form_template = "admin/home/provider/change_form_with_test.html"
 
     def get_fields(self, request, obj=None):
         return [
@@ -197,6 +173,38 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
             "color:#b00;font-weight:600;" if overdue else "",
             text
         )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "<path:object_id>/test-connection/",
+                self.admin_site.admin_view(self.test_connection_view),
+                name="home_llmprovider_test_connection",
+            ),
+            path(
+                "test-connection/new/",
+                self.admin_site.admin_view(self.test_connection_view),
+                name="home_llmprovider_test_connection_new",
+            ),
+        ]
+        return custom + urls
+
+    def test_connection_view(self, request, object_id=None):
+        if request.method != "POST":
+            return JsonResponse({"ok": False, "message": "POST required"}, status=405)
+
+        # vorhandenes Objekt laden (wenn vorhanden), aber NICHT speichern
+        instance = self.get_object(request, object_id) if object_id else None
+        form = self.form(request.POST, request.FILES, instance=instance)
+
+        # Validierung der Form (Schema etc.)
+        if not form.is_valid():
+            return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+
+        temp = form.save(commit=False)  # unsaved instance mit aktuellen Formwerten
+        ok, msg = test_provider_connection(temp)
+        return JsonResponse({"ok": ok, "message": msg})
 
 
 class CriteriaInline(admin.TabularInline):
