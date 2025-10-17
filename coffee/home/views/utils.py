@@ -151,7 +151,7 @@ def save_feedback_session(request):
                         llm_obj = LLMModel.objects.get(external_name=llm_external)
                         provider_obj = llm_obj.provider
                     except LLMModel.DoesNotExist:
-                        pass
+                        pass #TODO throw error or use default model?
 
                 client_uuid = crit.get("id")
                 crit_rows.append(FeedbackCriterionResult(

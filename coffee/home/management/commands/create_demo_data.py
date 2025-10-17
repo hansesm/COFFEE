@@ -533,7 +533,7 @@ class Command(BaseCommand):
             "Compared multiple approaches and selected the most appropriate one.",
             "Edge cases considered with comprehensive error handling."
         ]
-        helpfulness_choices = [1, 2, 3, 4, 5]
+        helpfulness_choices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
         # Iterate all demo courses
         for course in self.demo_courses:

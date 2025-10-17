@@ -90,7 +90,7 @@
         <div class="col-6 col-md-2 mb-4 mx-4 my-2">
             <label class="form-label">{% trans "Zeitraum" %}</label>
             <select class="form-select" name="bucket" onchange="this.form.submit()" form="metrics-filter">
-                <option value="day"  {% if bucket == 'day'  %}selected{% endif %}>{% trans "pro Tag" %}</option>
+                <option value="day" {% if bucket == 'day' %}selected{% endif %}>{% trans "pro Tag" %}</option>
                 <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "pro Woche" %}</option>
                 <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "pro Monat" %}</option>
             </select>
@@ -107,19 +107,39 @@
             </div>
         </div>
         {{ calls_rows|json_script:"calls-data" }}
-        <!-- Tabelle B: Token je Einreichung (Session) -->
-        <div class="card shadow-sm mb-4 mx-4">
-            <div class="card-body">
-                <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
-                <div class="chart-wrap" style="height:260px;">
-                    <canvas id="avg_tokens_task_chart"></canvas>
+    </div>
+    <div class="row g-4 mb-4">
+        <!-- Ø Tokens per task -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
+                    <div class="chart-wrap p-3" style="height:260px;">
+                        <canvas id="avg_tokens_task_chart"></canvas>
+                    </div>
+                    {% if not avg_tokens_per_task %}
+                    <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+                    {% endif %}
                 </div>
-                {% if not avg_tokens_per_task %}
-                <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
-                {% endif %}
             </div>
+            {{ avg_tokens_per_task|json_script:"avg-tokens-task-data" }}
         </div>
-        {{ avg_tokens_per_task|json_script:"avg-tokens-task-data" }}
+
+        <!-- Ø Helpfulness per task -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">{% trans "Ø Helpfulness pro Aufgabe" %}</h5>
+                    <div class="chart-wrap p-3" style="height:260px;">
+                        <canvas id="avg_help_task_chart"></canvas>
+                    </div>
+                    {% if not avg_help_per_task %}
+                    <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {{ avg_help_per_task|json_script:"avg-help-task-data" }}
+        </div>
     </div>
 </div>
 {% endblock content %}
@@ -248,20 +268,75 @@
     canvas.dataset.chartInitialized = "1";
   }
 
-  // Hooks – analog zu deinem bestehenden Chart
+  function renderAvgHelpPerTaskChart() {
+    const canvas = document.getElementById('avg_help_task_chart');
+    const dataEl = document.getElementById('avg-help-task-data');
+    if (!canvas || !dataEl) return;
+
+    if (canvas.dataset.chartInitialized === "1") {
+      if (window.avgHelpTaskChart) window.avgHelpTaskChart.update();
+      return;
+    }
+
+    const raw = JSON.parse(dataEl.textContent || '[]');
+    const labels = raw.map(r => r.task);
+    const values = raw.map(r => r.avg_helpfulness); // can be null
+
+    if (window.avgHelpTaskChart) {
+      window.avgHelpTaskChart.destroy();
+      window.avgHelpTaskChart = null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.avgHelpTaskChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '{% trans "Ø Helpfulness" %}',
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        indexAxis: 'y',
+        scales: {
+          x: {
+            min: 0,
+            max: 5, // Skala 0..5
+            title: { display: true, text: '{% trans "Helpfulness" %}' }
+          },
+          y: {
+            title: { display: true, text: '{% trans "Aufgabe" %}' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    canvas.dataset.chartInitialized = "1";
+  }
+
+  // Hooks ergänzen
   document.addEventListener('DOMContentLoaded', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
+    renderAvgHelpPerTaskChart();
   }, { once: true });
 
   document.addEventListener('htmx:afterSwap', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
+    renderAvgHelpPerTaskChart();
   });
 
   document.addEventListener('turbo:load', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
+    renderAvgHelpPerTaskChart();
   });
 </script>
 {% endblock scripts %}

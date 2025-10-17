@@ -198,6 +198,21 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             for row in avg_tokens_per_task_qs
         ]
 
+        avg_help_per_task_qs = (
+            sessions
+            .values(task_title=F("feedback__task__title"))
+            .annotate(avg_help=Avg("helpfulness_score"))
+            .order_by("-avg_help")
+        )
+
+        avg_help_per_task = [
+            {
+                "task": row["task_title"] or "N/A",
+                "avg_helpfulness": (float(row["avg_help"]) if row["avg_help"] is not None else None),
+            }
+            for row in avg_help_per_task_qs
+        ]
+
         context = {
             # Filter
             "courses": courses_for_select,
@@ -219,5 +234,6 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             "calls_rows": calls_rows,
             "token_rows": token_rows,
             "avg_tokens_per_task": avg_tokens_per_task,
+            "avg_help_per_task": avg_help_per_task,
         }
         return render(request, "pages/course_metrics.html", context)
