@@ -11,14 +11,13 @@ from django.utils.html import format_html
 from coffee.home.models import LLMModel, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession, \
     Course, LLMProvider, FeedbackCriterionResult
 from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
-from coffee.home.registry import SCHEMA_REGISTRY
+from coffee.home.registry import SCHEMA_REGISTRY, ProviderType
 
 admin.site.register(Task)
 admin.site.register(Criteria)
 admin.site.register(Feedback)
 admin.site.register(FeedbackCriteria)
 admin.site.register(FeedbackSession)
-admin.site.register(FeedbackCriterionResult)
 admin.site.register(Course)
 
 
@@ -70,10 +69,13 @@ class LLMProviderAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Typ ermitteln (bei Add ggf. aus POST)
         provider_type = self.data.get("type") or getattr(self.instance, "type", None)
-        schema_cls = SCHEMA_REGISTRY.get(provider_type)
-        schema_cls = schema_cls[0]
+        if provider_type:
+            schema_cls = SCHEMA_REGISTRY.get(provider_type)
+            schema_cls = schema_cls[0]
+        else:
+            schema_cls = SCHEMA_REGISTRY.get(ProviderType.OLLAMA)[0]
+
 
         # JSON initial befüllen
         if self.instance and self.instance.config:
@@ -332,3 +334,14 @@ class LLMModelAdmin(admin.ModelAdmin):
                 "admin:home_llmmodel_bulk_reassign", args=[obj.pk]
             )
         return super().render_change_form(request, context, *args, **kwargs)
+
+@admin.register(FeedbackCriterionResult)
+class FeedbackCriterionResultAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "title",
+        "created_at",
+    )
+
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"

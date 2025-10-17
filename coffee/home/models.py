@@ -390,7 +390,7 @@ class FeedbackSession(models.Model):
     staff_user = models.TextField(null=True, blank=True, db_index=True)  # Indexed for staff filtering
     submission = models.TextField()
     feedback_data = models.JSONField(default=dict)
-    helpfulness_score = models.CharField(max_length=10, blank=True, null=True)
+    helpfulness_score = models.FloatField(blank=True, null=True)
     feedback = models.ForeignKey(Feedback, null=True, blank=True, on_delete=models.SET_NULL,
                                  db_index=True)  # Indexed for foreign key lookups
     # This still allows referencing the Course (distinct from the Feedbacks Course if needed)
@@ -437,6 +437,7 @@ class FeedbackCriterionResult(models.Model):
     tokens_used_system = models.PositiveBigIntegerField(default=0)
     tokens_used_user = models.PositiveBigIntegerField(default=0)
     tokens_used_completion = models.PositiveBigIntegerField(default=0)
+    generation_duration = models.DurationField(null=True, blank=True)
 
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
 

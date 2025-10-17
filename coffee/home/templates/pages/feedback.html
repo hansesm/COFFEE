@@ -90,7 +90,8 @@
             <div id="feedbackSection_{{ feedback.criteria.id }}"
                  class="card feedback-card shadow-sm mb-3 feedback-section"
                  data-criteria-id="{{ feedback.criteria.id }}"
-                 data-llm="{{ feedback.criteria.llm }}">
+                 data-llm-id="{{ feedback.criteria.llm_fk.id|default_if_none:'' }}"
+                 data-llm-external="{{ feedback.criteria.llm_fk.external_name|default_if_none:''|escape }}">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 id="criteriaTitle_{{ feedback.criteria.id }}" class="mb-0">{{ feedback.criteria.title }}</h5>
                     <button id="infoButton_{{ feedback.criteria.id }}"
@@ -154,237 +155,249 @@
 {% endblock %}
 {% block scripts %}
 <script>
-    $(document).ready(function () {
-      // Initialize feedbackData
-      var feedbackData = {
-        user_input: null,
-        task: {
-          id: "{{ feedbackcriteria_set.0.feedback.task.id|escapejs }}",
-          title: "{{ feedbackcriteria_set.0.feedback.task.title|escapejs }}"
-        },
-        criteria: [],
-        helpfulness_score: null
-      };
-
-      // Handle form submission
-      $('#userSolutionForm').submit(function (event) {
-        event.preventDefault();
-        var userInput = $('#id_submission').val().trim();
-        var uuid = $('#feedbackUuidInput').val().trim();
-        var courseId = $('#feedbackCourseId').val().trim();
-        feedbackData.user_input = userInput;
-        feedbackData.feedback_id = uuid;
-        feedbackData.course_id = courseId;
-
-        // 1) Show top loading bar immediately with 100% width
-        $('#topLoadingBar').show();
-        $('#topLoadingBarProgress').css('width', '100%');
-
-        // Update download status during generation
-        $('#downloadPdfBtn').prop('disabled', true);
-        $('#downloadStatus').html('<small class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>{% trans "Generating feedback..." %}</small>');
-
-        // Clear old AI responses
-        $('.ai-response').val('');
-        feedbackData.criteria = [];
-
-        var $feedbackSections = $('.feedback-section');
-        var totalRequests = $feedbackSections.length;
-        var completedRequests = 0;
-
-        $feedbackSections.each(function () {
-          var criteriaId = $(this).data('criteria-id');
-          var criteriaTitle = $('#criteriaTitle_' + criteriaId).text();
-          var criteriaLlm = $(this).data('llm');
-          var responseField = $('#aiResponse_' + criteriaId);
-
-          // Prepare criteria in feedbackData
-          feedbackData.criteria.push({
-            id: criteriaId,
-            title: criteriaTitle,
-            ai_response: '',
-            llm: criteriaLlm
-          });
-
-(async () => {
-  const responseFieldStart = responseField.val() || '';
-  let acc = responseFieldStart;
-
-  const formData = new URLSearchParams();
-  formData.append('user_input', userInput);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 600000);
-
-  try {
-    const res = await fetch(`/feedback-stream/${uuid}/${criteriaId}/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': '{{ csrf_token }}'
+  $(document).ready(function () {
+    // ---------------------------
+    // Init: payload for saving
+    // ---------------------------
+    var feedbackData = {
+      user_input: null,
+      task: {
+        id: "{{ feedbackcriteria_set.0.feedback.task.id|escapejs }}",
+        title: "{{ feedbackcriteria_set.0.feedback.task.title|escapejs }}"
       },
-      body: formData.toString(),
-      signal: controller.signal
-    });
-
-    if (!res.ok || !res.body) {
-      const errText = await res.text();
-      responseField.val(errText || 'An error occurred. Please try again.');
-      return;
-    }
-
-    // --- SSE Parser (minimal, RFC-konform genug) ---
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    let curEvent = 'message';
-    let curData = [];
-
-    const dispatch = (event, dataStr) => {
-      // Daten sind ggf. mehrzeilig; wir erwarten JSON
-      let payload = null;
-      try { payload = dataStr ? JSON.parse(dataStr) : null; } catch {}
-      switch (event) {
-        case 'delta':
-          if (payload?.text) {
-            acc += payload.text;
-            responseField.val(acc);
-          }
-          break;
-        case 'usage':
-          {
-            const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
-            if (criterion) criterion.usage = payload;
-          }
-          break;
-        case 'error':
-          console.error('SSE error event', payload);
-          break;
-        case 'end':
-          // optional: irgendwas beim Ende
-          break;
-        default:
-          // unbekannte Events ignorieren
-          break;
-      }
+      criteria: [],
+      helpfulness_score: null
     };
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
+    // -------------------------------------------------
+    // Submit: generate feedback for all criteria/cards
+    // -------------------------------------------------
+    $('#userSolutionForm').on('submit', function (event) {
+      event.preventDefault();
 
-      // Zeilenweise parsen
-      let nl;
-      while ((nl = buf.indexOf('\n')) !== -1) {
-        const line = buf.slice(0, nl);
-        buf = buf.slice(nl + 1);
+      var userInput = $('#id_submission').val().trim();
+      var uuid = $('#feedbackUuidInput').val().trim();
+      var courseId = $('#feedbackCourseId').val().trim();
 
-        const trimmed = line.replace(/\r$/, '');
+      feedbackData.user_input = userInput;
+      feedbackData.feedback_id = uuid;
+      feedbackData.course_id = courseId;
 
-        if (trimmed === '') {
-          // Event abschließen
-          if (curData.length > 0) {
-            dispatch(curEvent, curData.join('\n'));
-          }
-          curEvent = 'message';
-          curData = [];
-          continue;
-        }
+      // Top loading bar
+      $('#topLoadingBar').show();
+      $('#topLoadingBarProgress').css('width', '100%');
 
-        if (trimmed.startsWith(':')) {
-          // Kommentar/Heartbeat -> ignorieren
-          continue;
-        }
+      // Disable download while generating
+      $('#downloadPdfBtn').prop('disabled', true);
+      $('#downloadStatus').html(
+        '<small class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>{% trans "Generating feedback..." %}</small>'
+      );
 
-        const colon = trimmed.indexOf(':');
-        const field = colon === -1 ? trimmed : trimmed.slice(0, colon);
-        const rawVal = colon === -1 ? '' : trimmed.slice(colon + 1);
-        const valueStr = rawVal.startsWith(' ') ? rawVal.slice(1) : rawVal;
+      // Clear old responses & criteria array
+      $('.ai-response').val('');
+      feedbackData.criteria = [];
 
-        if (field === 'event') {
-          curEvent = valueStr || 'message';
-        } else if (field === 'data') {
-          curData.push(valueStr);
-        } // id / retry könntest du bei Bedarf auch auswerten
+      var $feedbackSections = $('.feedback-section');
+      var totalRequests = $feedbackSections.length;
+      var completedRequests = 0;
+
+      // Edge case: no criteria
+      if (totalRequests === 0) {
+        $('#topLoadingBar').fadeOut();
+        $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
+        saveFeedbackSession(feedbackData);
+        return;
       }
-    }
 
-    // Reste (falls Response ohne Abschlussleerzeile endet)
-    if (curData.length > 0) dispatch(curEvent, curData.join('\n'));
+      // For each criterion card start one stream request
+      $feedbackSections.each(function () {
+        var $section = $(this);
 
-    // final speichern
-    const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
-    if (criterion) criterion.ai_response = acc;
+        // Read data-* attributes (jQuery maps data-llm-id -> llmId usw.)
+        var criteriaId = $section.data('criteriaId') ?? $section.data('criteria-id');
+        var criteriaTitle = $('#criteriaTitle_' + criteriaId).text();
+        var criteriaLlmId = $section.data('llmId') ?? null;               // from data-llm-id
+        var criteriaLlmExternal = $section.data('llmExternal') ?? null;   // from data-llm-external
+        var responseField = $('#aiResponse_' + criteriaId);
 
-  } catch (err) {
-    console.error('Stream error for criteria', criteriaId, err);
-    responseField.val('Error fetching response.');
-  } finally {
-    clearTimeout(timeoutId);
-    completedRequests++;
-    if (completedRequests === totalRequests) {
-      $('#topLoadingBar').fadeOut();
-      $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
-      saveFeedbackSession(feedbackData);
-    }
-  }
-})();
-
-
+        // Prepare entry in feedbackData
+        feedbackData.criteria.push({
+          id: criteriaId,
+          title: criteriaTitle,
+          ai_response: '',
+          llm_model_id: criteriaLlmId,
+          llm_external_name: criteriaLlmExternal
         });
-      });
 
-      // Handle Helpfulness score selection: now uses .nps-segment
-      document.querySelectorAll('.nps-segment').forEach(function (segment) {
-        segment.addEventListener('click', function () {
-          // Remove 'nps-selected' from all segments
-          document.querySelectorAll('.nps-segment').forEach(function (seg) {
-            seg.classList.remove('nps-selected');
-          });
-          // Add 'nps-selected' to the clicked segment
-          this.classList.add('nps-selected');
+        // --- Start async IIFE for this criterion ---
+        (async () => {
+          const responseFieldStart = responseField.val() || '';
+          let acc = responseFieldStart;
 
-          // Set the selected score and save
-          feedbackData.helpfulness_score = this.dataset.score;
-          saveFeedbackSession(feedbackData);
+          // Build POST body
+          const formData = new URLSearchParams();
+          formData.append('user_input', userInput);
+          // Optional: send LLM info if backend wants it
+          if (criteriaLlmId) formData.append('llm_model_id', criteriaLlmId);
+          if (criteriaLlmExternal) formData.append('llm_external_name', criteriaLlmExternal);
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min
+
+          try {
+            const res = await fetch(`/feedback-stream/${uuid}/${criteriaId}/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+              },
+              body: formData.toString(),
+              signal: controller.signal
+            });
+
+            if (!res.ok || !res.body) {
+              const errText = await res.text();
+              responseField.val(errText || 'An error occurred. Please try again.');
+              return;
+            }
+
+            // --- Minimal SSE parser ---
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            let curEvent = 'message';
+            let curData = [];
+
+            const dispatch = (event, dataStr) => {
+              let payload = null;
+              try { payload = dataStr ? JSON.parse(dataStr) : null; } catch {}
+              switch (event) {
+                case 'delta':
+                  if (payload?.text) {
+                    acc += payload.text;
+                    responseField.val(acc);
+                  }
+                  break;
+                case 'usage': {
+                  const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
+                  if (criterion) criterion.usage = payload;
+                  break;
+                }
+                case 'error':
+                  console.error('SSE error event', payload);
+                  break;
+                case 'end':
+                  // nothing special to do
+                  break;
+                default:
+                  break;
+              }
+            };
+
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              buf += decoder.decode(value, { stream: true });
+
+              let nl;
+              while ((nl = buf.indexOf('\n')) !== -1) {
+                const line = buf.slice(0, nl);
+                buf = buf.slice(nl + 1);
+
+                const trimmed = line.replace(/\r$/, '');
+                if (trimmed === '') {
+                  if (curData.length > 0) dispatch(curEvent, curData.join('\n'));
+                  curEvent = 'message';
+                  curData = [];
+                  continue;
+                }
+                if (trimmed.startsWith(':')) continue; // comment/heartbeat
+
+                const colon = trimmed.indexOf(':');
+                const field = colon === -1 ? trimmed : trimmed.slice(0, colon);
+                const rawVal = colon === -1 ? '' : trimmed.slice(colon + 1);
+                const valueStr = rawVal.startsWith(' ') ? rawVal.slice(1) : rawVal;
+
+                if (field === 'event') {
+                  curEvent = valueStr || 'message';
+                } else if (field === 'data') {
+                  curData.push(valueStr);
+                }
+              }
+            }
+
+            // Flush remaining event
+            if (curData.length > 0) dispatch(curEvent, curData.join('\n'));
+
+            // Save final text into payload
+            const criterion = feedbackData.criteria.find(c => c.id === criteriaId);
+            if (criterion) criterion.ai_response = acc;
+
+          } catch (err) {
+            console.error('Stream error for criteria', criteriaId, err);
+            responseField.val('Error fetching response.');
+          } finally {
+            clearTimeout(timeoutId);
+            completedRequests++;
+            if (completedRequests === totalRequests) {
+              $('#topLoadingBar').fadeOut();
+              $('#downloadStatus').html('<small class="text-warning"><i class="fas fa-star me-1"></i>{% trans "Please rate the feedback to enable download" %}</small>');
+              saveFeedbackSession(feedbackData);
+            }
+          }
+        })();
+        // --- end IIFE ---
+      }); // end each
+    }); // end submit
+
+    // ---------------------------------------
+    // NPS / Helpfulness: clickable segments
+    // ---------------------------------------
+    document.querySelectorAll('.nps-segment').forEach(function (segment) {
+      segment.addEventListener('click', function () {
+        document.querySelectorAll('.nps-segment').forEach(function (seg) {
+          seg.classList.remove('nps-selected');
         });
-      });
+        this.classList.add('nps-selected');
 
-      // Handle PDF download button click
-      $('#downloadPdfBtn').click(function() {
-        var sessionId = $(this).data('session-id');
-        if (sessionId) {
-          // Create download URL and trigger download
-          var downloadUrl = '/feedback/' + sessionId + '/download/';
-          window.location.href = downloadUrl;
-        }
+        feedbackData.helpfulness_score = this.dataset.score;
+        saveFeedbackSession(feedbackData);
       });
     });
 
-    // Save feedback session
-    function saveFeedbackSession(feedbackData) {
-      $.ajax({
-        url: '/save-feedback-session/',
-        method: 'POST',
-        data: JSON.stringify({ feedback_data: feedbackData }),
-        contentType: 'application/json',
-        headers: {
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        success: function (response) {
-          // Session saved successfully
-          if (response.session_id) {
-            // Enable download button and set up the download URL
-            $('#downloadPdfBtn').prop('disabled', false);
-            $('#downloadPdfBtn').data('session-id', response.session_id);
-            $('#downloadStatus').html('<small class="text-success"><i class="fas fa-check me-1"></i>{% trans "Ready to download" %}</small>');
-          }
-        },
-        error: function (error) {
-          // Handle error in saving session
+    // ---------------------------
+    // Download PDF handler
+    // ---------------------------
+    $('#downloadPdfBtn').on('click', function () {
+      var sessionId = $(this).data('session-id');
+      if (sessionId) {
+        window.location.href = '/feedback/' + sessionId + '/download/';
+      }
+    });
+  }); // end document.ready
+
+  // ---------------------------------------
+  // Ajax: save feedback session
+  // ---------------------------------------
+  function saveFeedbackSession(feedbackData) {
+    $.ajax({
+      url: '/save-feedback-session/',
+      method: 'POST',
+      data: JSON.stringify({ feedback_data: feedbackData }),
+      contentType: 'application/json',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      success: function (response) {
+        if (response.session_id) {
+          $('#downloadPdfBtn').prop('disabled', false);
+          $('#downloadPdfBtn').data('session-id', response.session_id);
+          $('#downloadStatus').html('<small class="text-success"><i class="fas fa-check me-1"></i>{% trans "Ready to download" %}</small>');
         }
-      });
-    }
+      },
+      error: function (error) {
+        console.error('Failed to save feedback session', error);
+      }
+    });
+  }
 </script>
 {% endblock %}
+

@@ -955,3 +955,6 @@ a:hover {
         font-size: 0.7rem;
     }
 }
+
+.chart-wrap { height: 220px; }
+#calls_line_chart { max-height: 100%; }

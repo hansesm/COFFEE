@@ -67,6 +67,13 @@
               <span>{% trans 'Analysis' %}</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/metrics/criteria' %}active{% endif %}"
+               href="/metrics/criteria">
+              <i class="fas fa-chart-line me-2"></i>
+              <span>{% trans 'Metrics' %}</span>
+            </a>
+          </li>
         </ul>
       </li>
     {% endif %}

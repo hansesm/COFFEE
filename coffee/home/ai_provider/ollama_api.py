@@ -92,7 +92,6 @@ class OllamaClient(AIBaseClient):
                         if on_usage_report:
                             on_usage_report(CoffeeUsage(tokens_used_system=usage.prompt_eval_count,
                                                         tokens_used_completion=usage.eval_count,
-                                                        prompt_duration_ns=usage.prompt_duration_ns,
                                                         total_duration_ns=usage.total_duration_ns))
 
                         logger.info(

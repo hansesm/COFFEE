@@ -7,7 +7,6 @@ class CoffeeUsage(BaseModel):
     tokens_used_system: int = Field(default=0)
     tokens_used_user: int = Field(default=0)
     tokens_used_completion: int = Field(default=0)
-    prompt_duration_ns: int = Field(default=0)
     total_duration_ns: int = Field(default=0)
 
 class OllamaUsage(BaseModel):
