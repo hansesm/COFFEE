@@ -63,6 +63,7 @@ server = "uvicorn coffee.core.asgi:application --reload"
 prod-like = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.dev.py --worker-class uvicorn.workers.UvicornWorker"
 prod = "gunicorn coffee.core.asgi:application --config gunicorn-cfg.prod.py --worker-class uvicorn.workers.UvicornWorker"
 import-demo-data = "python manage.py create_demo_data"
+clear-demo-data = "python manage.py create_demo_data --clear"
 test = "python manage.py test --pattern=\"tests_*.py\""
 check = "python manage.py check"
 

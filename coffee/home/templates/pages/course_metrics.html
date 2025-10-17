@@ -1,0 +1,258 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+{% load humanize %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-3">
+        {% trans "Kurs-Metriken" %}
+        {% if selected_course_name %}<small class="text-muted">— {{ selected_course_name }}</small>{% endif %}
+    </h2>
+
+    <!-- Filter -->
+    <form method="get" class="row g-3 align-items-end mb-3">
+        <div class="col-6 col-md-6">
+            <label for="course_id" class="form-label">{% trans "Kurs auswählen" %}</label>
+            <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
+                {% for c in courses %}
+                {% if c.id|stringformat:"s" == selected_course_id|stringformat:"s" %}
+                <option value="{{ c.id }}" selected>{{ c.name }}</option>
+                {% else %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label class="form-label">{% trans "Start" %}</label>
+            <input type="datetime-local"
+                   class="form-control"
+                   name="start"
+                   value="{{ start|date:'c'|slice:':16' }}"
+                   onchange="this.form.submit()">
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label class="form-label">{% trans "Ende" %}</label>
+            <input type="datetime-local"
+                   class="form-control"
+                   name="end"
+                   value="{{ end|date:'c'|slice:':16' }}"
+                   onchange="this.form.submit()">
+        </div>
+    </form>
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-muted small">{% trans "Sessions (gesamt)" %}</div>
+                    <div class="h3 mb-0">{{ kpi.total_sessions|intcomma:True|default:"–" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-muted small">{% trans "Tokens (gesamt)" %}</div>
+                    <div class="h3 mb-0">{{ kpi.total_tokens|intcomma:True|default:"–" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-muted small">{% trans "Ø Helpfulness" %}</div>
+                    <div class="h3 mb-0">
+                        {% if kpi.avg_helpfulness is not None %}
+                        {{ kpi.avg_helpfulness|floatformat:2 }}
+                        {% else %}–{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-muted small">{% trans "Ø Dauer (s)" %}</div>
+                    <div class="h3 mb-0">
+                        {% if kpi.avg_duration_seconds is not None %}
+                        {{ kpi.avg_duration_seconds|floatformat:1 }}
+                        {% else %}–{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
+            <div class="chart-wrap" style="height:220px;">
+                <canvas id="calls_line_chart"></canvas>
+            </div>
+        </div>
+    </div>
+    {{ calls_rows|json_script:"calls-data" }}
+    <!-- Tabelle B: Token je Einreichung (Session) -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
+            <div class="chart-wrap" style="height:260px;">
+                <canvas id="avg_tokens_task_chart"></canvas>
+            </div>
+            {% if not avg_tokens_per_task %}
+            <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+            {% endif %}
+        </div>
+    </div>
+    {{ avg_tokens_per_task|json_script:"avg-tokens-task-data" }}
+</div>
+
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{{ block.super }}
+<!-- Chart.js + Date-Adapter (für Zeitachse) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+<script>
+    function renderCallsChart() {
+      const canvas = document.getElementById('calls_line_chart');
+      const dataEl = document.getElementById('calls-data');
+      if (!canvas || !dataEl) return;
+
+      // Guard: nicht mehrfach initialisieren
+      if (canvas.dataset.chartInitialized === "1") {
+        // Aktualisieren statt neu bauen? Dann hier ggf. .data neu setzen + update()
+        if (window.callsChart) window.callsChart.update();
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+
+      // Falls noch ein Chart existiert → sauber zerstören
+      if (window.callsChart) {
+        window.callsChart.destroy();
+        window.callsChart = null;
+      }
+
+      const raw = JSON.parse(dataEl.textContent || '[]');
+      const points = raw.map(r => ({ x: r.bucket, y: r.count }));
+      const bucketUnit = "{{ bucket }}" === "week" ? "week" : "day";
+
+      window.callsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: '{% trans "Aufrufe" %}',
+            data: points,
+            borderWidth: 2,
+            pointRadius: 2,
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,   // WICHTIG, wenn die Höhe per CSS kommt
+          animation: false,            // kein Flackern
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { type: 'time', time: { unit: bucketUnit }, title: { display: true, text: '{% trans "Tage" %}' } },
+            y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: '{% trans "Aufrufe" %}' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // Markiere als initialisiert
+      canvas.dataset.chartInitialized = "1";
+    }
+
+    // Events: DOMContentLoaded (Seitenlade), plus htmx/turbo wenn du sie nutzt
+    document.addEventListener('DOMContentLoaded', renderCallsChart, { once: true });
+    document.addEventListener('htmx:afterSwap', () => {
+      // nach partial swaps neu rendern
+      renderCallsChart();
+    });
+    document.addEventListener('turbo:load', () => {
+      renderCallsChart();
+    });
+
+    function renderAvgTokensPerTaskChart() {
+    const canvas = document.getElementById('avg_tokens_task_chart');
+    const dataEl = document.getElementById('avg-tokens-task-data');
+    if (!canvas || !dataEl) return;
+
+    // Prevent double init
+    if (canvas.dataset.chartInitialized === "1") {
+      if (window.avgTokensTaskChart) window.avgTokensTaskChart.update();
+      return;
+    }
+
+    const raw = JSON.parse(dataEl.textContent || '[]');
+    const labels = raw.map(r => r.task);
+    const values = raw.map(r => r.avg_tokens);
+
+    // Destroy previous chart if any
+    if (window.avgTokensTaskChart) {
+      window.avgTokensTaskChart.destroy();
+      window.avgTokensTaskChart = null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.avgTokensTaskChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '{% trans "Ø Tokens pro Aufgabe" %}',
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        indexAxis: 'y', // horizontale Balken – besser für lange Aufgabennamen
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            title: { display: true, text: '{% trans "Tokens" %}' }
+          },
+          y: {
+            title: { display: true, text: '{% trans "Aufgabe" %}' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    canvas.dataset.chartInitialized = "1";
+  }
+
+  // Hooks – analog zu deinem bestehenden Chart
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCallsChart();
+    renderAvgTokensPerTaskChart();
+  }, { once: true });
+
+  document.addEventListener('htmx:afterSwap', () => {
+    renderCallsChart();
+    renderAvgTokensPerTaskChart();
+  });
+
+  document.addEventListener('turbo:load', () => {
+    renderCallsChart();
+    renderAvgTokensPerTaskChart();
+  });
+</script>
+{% endblock scripts %}
+

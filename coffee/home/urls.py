@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 from coffee.home.views import *
 from coffee.home.views.utils import feedback_pdf_download, FeedbackSessionAnalysisView, FeedbackSessionCSVView, \
     save_feedback_session, FetchRelatedDataView
+from coffee.home.views.metrics import CourseMetricsView
 
 urlpatterns = [
     path("", FeedbackListView.as_view(), name="feedback_list"),
@@ -74,4 +75,5 @@ urlpatterns = [
     path('policies/', policies, name='policies'),
     # Account page that shows user information
     path('account/', TemplateView.as_view(template_name="pages/account.html"), name="account"),
+    path("metrics/criteria/", CourseMetricsView.as_view(), name="criteria_metrics"),
 ]

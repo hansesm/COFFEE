@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import transaction
 
 from coffee.home.models import FeedbackSession, FeedbackCriterionResult
@@ -162,7 +164,8 @@ def save_feedback_session(request):
                     llm_external_name=llm_external,
                     tokens_used_system=int(u.get("tokens_used_system") or 0),
                     tokens_used_user=int(u.get("tokens_used_user") or 0),
-                    tokens_used_completion=int(u.get("tokens_used_completion") or 0)
+                    tokens_used_completion=int(u.get("tokens_used_completion") or 0),
+                    generation_duration=timedelta(microseconds=int(u.get("total_duration_ns") / 1000 or 0))
                 ))
 
             if crit_rows:
