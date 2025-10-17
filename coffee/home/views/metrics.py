@@ -225,6 +225,39 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             for row in calls_per_task_qs
         ]
 
+        help_coverage_qs = (
+            sessions
+            .values(task_title=F("feedback__task__title"))
+            .annotate(
+                total=Count("id", distinct=True),
+                with_help=Count("id", filter=Q(helpfulness_score__isnull=False), distinct=True),
+                without_help=Count("id", filter=Q(helpfulness_score__isnull=True), distinct=True),
+            )
+            .annotate(
+                pct_with=Case(
+                    When(total__gt=0, then=F("with_help") * 100.0 / F("total")),
+                    default=Value(0.0), output_field=FloatField()
+                ),
+                pct_without=Case(
+                    When(total__gt=0, then=F("without_help") * 100.0 / F("total")),
+                    default=Value(0.0), output_field=FloatField()
+                ),
+            )
+            .order_by("-without_help", "-pct_without")
+        )
+
+        help_coverage_per_task = [
+            {
+                "task": row["task_title"] or "N/A",
+                "total": int(row["total"] or 0),
+                "with_help": int(row["with_help"] or 0),
+                "without_help": int(row["without_help"] or 0),
+                "pct_with": float(row["pct_with"] or 0.0),
+                "pct_without": float(row["pct_without"] or 0.0),
+            }
+            for row in help_coverage_qs
+        ]
+
         context = {
             # Filter
             "courses": courses_for_select,
@@ -247,6 +280,7 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             "token_rows": token_rows,
             "avg_tokens_per_task": avg_tokens_per_task,
             "avg_help_per_task": avg_help_per_task,
-            "calls_per_task": calls_per_task
+            "calls_per_task": calls_per_task,
+            "help_coverage_per_task": help_coverage_per_task,
         }
         return render(request, "pages/course_metrics.html", context)
