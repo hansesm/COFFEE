@@ -213,6 +213,18 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             for row in avg_help_per_task_qs
         ]
 
+        calls_per_task_qs = (
+            sessions
+            .values(task_title=F("feedback__task__title"))
+            .annotate(count=Count("id", distinct=True))  # distinct falls durch Joins Duplikate entstehen
+            .order_by("-count")
+        )
+
+        calls_per_task = [
+            {"task": row["task_title"] or "N/A", "count": int(row["count"] or 0)}
+            for row in calls_per_task_qs
+        ]
+
         context = {
             # Filter
             "courses": courses_for_select,
@@ -235,5 +247,6 @@ class CourseMetricsView(ManagerRequiredMixin, View):
             "token_rows": token_rows,
             "avg_tokens_per_task": avg_tokens_per_task,
             "avg_help_per_task": avg_help_per_task,
+            "calls_per_task": calls_per_task
         }
         return render(request, "pages/course_metrics.html", context)

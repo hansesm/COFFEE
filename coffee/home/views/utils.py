@@ -142,13 +142,13 @@ def save_feedback_session(request):
             crit_rows = []
             for crit in (feedback_data.get("criteria") or []):
                 u = crit.get("usage") or {}
-                llm_external = crit.get("llm") #TODO get llm via FK
+                llm_id = crit.get("llm_model_id") #TODO get llm via FK
 
                 llm_obj = None
                 provider_obj = None
-                if llm_external:
+                if llm_id:
                     try:
-                        llm_obj = LLMModel.objects.get(external_name=llm_external)
+                        llm_obj = LLMModel.objects.get(pk=llm_id)
                         provider_obj = llm_obj.provider
                     except LLMModel.DoesNotExist:
                         pass #TODO throw error or use default model?
@@ -161,7 +161,7 @@ def save_feedback_session(request):
                     ai_response=crit.get("ai_response") or "",
                     llm_model=llm_obj,
                     provider=provider_obj,
-                    llm_external_name=llm_external,
+                    llm_external_name=llm_id,
                     tokens_used_system=int(u.get("tokens_used_system") or 0),
                     tokens_used_user=int(u.get("tokens_used_user") or 0),
                     tokens_used_completion=int(u.get("tokens_used_completion") or 0),

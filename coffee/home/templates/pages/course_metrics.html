@@ -140,6 +140,24 @@
             </div>
             {{ avg_help_per_task|json_script:"avg-help-task-data" }}
         </div>
+
+        <div class="row g-4 mb-4">
+          <!-- Calls per task -->
+          <div class="col-12">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="mb-3">{% trans "Aufrufe pro Aufgabe" %}</h5>
+                <div class="chart-wrap p-3" style="height:260px;">
+                  <canvas id="calls_per_task_chart"></canvas>
+                </div>
+                {% if not calls_per_task %}
+                  <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+                {% endif %}
+              </div>
+            </div>
+            {{ calls_per_task|json_script:"calls-per-task-data" }}
+          </div>
+        </div>
     </div>
 </div>
 {% endblock content %}
@@ -320,23 +338,78 @@
     canvas.dataset.chartInitialized = "1";
   }
 
-  // Hooks ergänzen
+  function renderCallsPerTaskChart() {
+    const canvas = document.getElementById('calls_per_task_chart');
+    const dataEl = document.getElementById('calls-per-task-data');
+    if (!canvas || !dataEl) return;
+
+    if (canvas.dataset.chartInitialized === "1") {
+      if (window.callsPerTaskChart) window.callsPerTaskChart.update();
+      return;
+    }
+
+    const raw = JSON.parse(dataEl.textContent || '[]');
+    const labels = raw.map(r => r.task);
+    const values = raw.map(r => r.count);
+
+    if (window.callsPerTaskChart) {
+      window.callsPerTaskChart.destroy();
+      window.callsPerTaskChart = null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.callsPerTaskChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '{% trans "Aufrufe" %}',
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        indexAxis: 'y', // horizontal; besser für lange Aufgabennamen
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            title: { display: true, text: '{% trans "Aufrufe" %}' }
+          },
+          y: {
+            title: { display: true, text: '{% trans "Aufgabe" %}' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    canvas.dataset.chartInitialized = "1";
+  }
+
+  // Hooks ergänzen (du hast die anderen schon eingetragen)
   document.addEventListener('DOMContentLoaded', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
     renderAvgHelpPerTaskChart();
+    renderCallsPerTaskChart();
   }, { once: true });
 
   document.addEventListener('htmx:afterSwap', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
     renderAvgHelpPerTaskChart();
+    renderCallsPerTaskChart();
   });
 
   document.addEventListener('turbo:load', () => {
     renderCallsChart();
     renderAvgTokensPerTaskChart();
     renderAvgHelpPerTaskChart();
+    renderCallsPerTaskChart();
   });
 </script>
 {% endblock scripts %}
