@@ -9,7 +9,7 @@
     </h2>
 
     <!-- Filter -->
-    <form method="get" class="row g-3 align-items-end mb-3">
+    <form id="metrics-filter" method="get" class="row g-3 align-items-end mb-3">
         <div class="col-6 col-md-6">
             <label for="course_id" class="form-label">{% trans "Kurs auswählen" %}</label>
             <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
@@ -86,31 +86,41 @@
         </div>
     </div>
 
-    <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
     <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
-            <div class="chart-wrap" style="height:220px;">
-                <canvas id="calls_line_chart"></canvas>
-            </div>
+        <div class="col-6 col-md-2 mb-4 mx-4 my-2">
+            <label class="form-label">{% trans "Zeitraum" %}</label>
+            <select class="form-select" name="bucket" onchange="this.form.submit()" form="metrics-filter">
+                <option value="day"  {% if bucket == 'day'  %}selected{% endif %}>{% trans "pro Tag" %}</option>
+                <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "pro Woche" %}</option>
+                <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "pro Monat" %}</option>
+            </select>
         </div>
-    </div>
-    {{ calls_rows|json_script:"calls-data" }}
-    <!-- Tabelle B: Token je Einreichung (Session) -->
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
-            <div class="chart-wrap" style="height:260px;">
-                <canvas id="avg_tokens_task_chart"></canvas>
-            </div>
-            {% if not avg_tokens_per_task %}
-            <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
-            {% endif %}
-        </div>
-    </div>
-    {{ avg_tokens_per_task|json_script:"avg-tokens-task-data" }}
-</div>
 
+
+        <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
+        <div class="card shadow-sm mb-4 mx-4">
+            <div class="card-body">
+                <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
+                <div class="chart-wrap" style="height:220px;">
+                    <canvas id="calls_line_chart"></canvas>
+                </div>
+            </div>
+        </div>
+        {{ calls_rows|json_script:"calls-data" }}
+        <!-- Tabelle B: Token je Einreichung (Session) -->
+        <div class="card shadow-sm mb-4 mx-4">
+            <div class="card-body">
+                <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
+                <div class="chart-wrap" style="height:260px;">
+                    <canvas id="avg_tokens_task_chart"></canvas>
+                </div>
+                {% if not avg_tokens_per_task %}
+                <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+                {% endif %}
+            </div>
+        </div>
+        {{ avg_tokens_per_task|json_script:"avg-tokens-task-data" }}
+    </div>
 </div>
 {% endblock content %}
 

@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.views import View
 from django.shortcuts import render
 from django.utils import timezone
-from django.db.models.functions import TruncDay, TruncWeek, Coalesce
+from django.db.models.functions import TruncDay, TruncWeek, Coalesce, TruncMonth
 
 from coffee.home.mixins import ManagerRequiredMixin
 from coffee.home.models import Course, FeedbackSession, FeedbackCriterionResult
@@ -81,7 +81,15 @@ class CourseMetricsView(ManagerRequiredMixin, View):
         )["total"] or 0
 
         # ===== Tabellen =====
-        trunc_fn = TruncWeek if bucket == "week" else TruncDay
+        bucket = (request.GET.get("bucket") or "day").lower()
+        if bucket not in {"day", "week", "month"}:
+            bucket = "day"
+
+        trunc_fn = (
+            TruncWeek if bucket == "week"
+            else TruncMonth if bucket == "month"
+            else TruncDay
+        )
 
         # A) Aufrufe pro Tag/Woche (Sessions zählen)
         calls_by_bucket = (
