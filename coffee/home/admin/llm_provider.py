@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.contrib import admin
 from django.db.models import Count
@@ -12,9 +14,6 @@ from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
 
 
 def test_provider_connection(provider: LLMProvider) -> tuple[bool, str]:
-    """
-    Hier deine echte Verbindungslogik (kurzer Timeout!).
-    """
     try:
         provider_config, provider_class = SCHEMA_REGISTRY[provider.type]
         config = provider_config.from_provider(provider)
@@ -49,6 +48,12 @@ class LLMProviderAdminForm(forms.ModelForm):
         model = LLMProvider
         fields = "__all__"
 
+    api_key = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Leave empty to keep the previously stored key."
+    )
+
     class Media:
         js = ("admin/js/admin/ProviderTypeAutosubmit.js",)
 
@@ -64,12 +69,7 @@ class LLMProviderAdminForm(forms.ModelForm):
         if self.instance and self.instance.config:
             self.fields["config"].initial = self.instance.config
         self.fields["config"].help_text = schema_help(schema_cls) if schema_cls else \
-            f"Free JSON (no registriertes Schema for '{provider_type}')."
-
-    def clean(self):
-        cleaned = super().clean()
-        return cleaned
-
+            f"Free JSON (no registered schema for '{provider_type}')."
 
 class ProviderModelsInline(admin.TabularInline):
     model = LLMModel
@@ -99,6 +99,19 @@ class LLMProviderAdmin(PreserveEncryptedOnEmptyAdminMixin):
     inlines = [ProviderModelsInline]
     actions = [reset_quota_now]
     change_form_template = "admin/home/provider/change_form_with_test.html"
+
+    def _schema_help_map(self):
+        data = {}
+        for t, (schema_cls, _provider_cls) in SCHEMA_REGISTRY.items():
+            data[t] = schema_help(schema_cls)
+        # Fallback-Text für unbekannte Typen
+        data["_fallback"] = f"Free JSON (no registered schema)."
+        return data
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["schema_help_map_json"] = json.dumps(self._schema_help_map())
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
     def get_fields(self, request, obj=None):
         return [

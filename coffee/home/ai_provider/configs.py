@@ -13,6 +13,8 @@ class OllamaConfig(BaseModel):
     temperature: float = Field(default=0.8, ge=0.0, le=2.0, json_schema_extra={"admin_visible": True})
     top_p: float = Field(default=0.1, ge=0.0, le=1.0, json_schema_extra={"admin_visible": True})
 
+    model_config = ConfigDict(extra='forbid', from_attributes=True)
+
     @classmethod
     @field_validator("model_names", mode="before")
     def split_model_names(cls, v):
@@ -20,69 +22,19 @@ class OllamaConfig(BaseModel):
             return [m.strip() for m in v.split(",") if m.strip()]
         return v
 
-    class Config:
-        from_attributes = True
-
-    @staticmethod
-    def _normalize_host(url: Optional[str]) -> Optional[str]:
-        if not url:
-            return None
-        u = url.strip()
-        if not u.startswith(("http://", "https://")):
-            return f"http://{u}"
-        return u
-
     @classmethod
     def from_provider(cls, provider: "Provider"):
-        cfg: Dict[str, Any] = {}
-        cfg_json: Dict[str, Any] = (provider.config or {}).copy()
+        data = dict(provider.config or {})
 
-        # 1) Mapping aus provider.config (nutzt evtl. „alias“-Keys)
-        #    Erlaubt alternative Schlüssel in der JSON: "timeout" statt "request_timeout", "verify" statt "verify_ssl" etc.
-        alias_map = {
-            "host": "host",
-            "endpoint": "host",
-            "verify": "verify_ssl",
-            "verify_ssl": "verify_ssl",
-            "auth_token": "auth_token",
-            "api_key": "auth_token",
-            "default_model": "default_model",
-            "model_names": "model_names",
-            "timeout": "request_timeout",
-            "request_timeout": "request_timeout",
-            "temperature": "temperature",
-            "top_p": "top_p",
-        }
-        for key, value in cfg_json.items():
-            target = alias_map.get(key)
-            if target is None:
-                continue
-            cfg[target] = value
-
-        # 2) Provider-Felder (überschreiben JSON, falls gesetzt)
         if provider.endpoint:
-            cfg["host"] = provider.endpoint
+            data["host"] = provider.endpoint
         if provider.api_key:
-            cfg["auth_token"] = provider.api_key
+            data["auth_token"] = provider.api_key
 
-        # Host normalisieren (Schema ergänzen, falls fehlt)
-        if "host" in cfg:
-            cfg["host"] = cls._normalize_host(cfg["host"])
-
-        return cls.model_validate(cfg)
-
-        # # 4) Validierung durch Pydantic
-        # try:
-        #     return cls.model_validate(cfg)
-        # except ValidationError as e:
-        #     # Zusatzinfos für Debugging
-        #     raise ValidationError(
-        #         e.errors(),
-        #         cls,
-        #     ) from e
+        return cls.model_validate(data)
 
 class AzureAIConfig(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = ConfigDict(extra='forbid', from_attributes=True)
 
     endpoint: str = Field(
         description="Azure AI Inference Endpoint (z. B. https://<name>.inference.azure.com)",
@@ -208,7 +160,7 @@ class AzureAIConfig(BaseModel):
 
 
 class AzureOpenAIConfig(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = ConfigDict(extra='forbid', from_attributes=True)
 
     # Verbindung
     endpoint: str = Field(

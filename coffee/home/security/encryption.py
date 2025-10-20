@@ -1,21 +1,17 @@
-# app/fields.py
 from django.db import models
 from django.core import signing
 from django.conf import settings
 
 class EncryptedTextField(models.TextField):
-    """
-    Verschlüsseltes Textfeld mit Django-internem Fernet-Signing.
-    """
     def get_prep_value(self, value):
-        """Beim Speichern verschlüsseln."""
+        """Encrypt at storing data"""
         if value is None or value == "":
             return value
         signer = signing.Signer(key=settings.SECRET_KEY)
         return signer.sign_object(value, serializer=signing.JSONSerializer)
 
     def from_db_value(self, value, expression, connection):
-        """Beim Laden entschlüsseln."""
+        """Decrypt at loading from db"""
         if value is None or value == "":
             return value
         signer = signing.Signer(key=settings.SECRET_KEY)
@@ -26,5 +22,5 @@ class EncryptedTextField(models.TextField):
             return None
 
     def to_python(self, value):
-        """Für Form-Felder und Serialisierung"""
+        """For Form-Fields and serialization"""
         return value

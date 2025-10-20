@@ -12,8 +12,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from coffee.home.security.encryption import EncryptedTextField
-from coffee.home.registry import ProviderType
-from coffee.home.validations import validate_config_for_type
+from coffee.home.registry import ProviderType, SCHEMA_REGISTRY
 
 
 def get_default_course():
@@ -156,7 +155,6 @@ class LLMProvider(models.Model):
         return start, end
 
     def used_tokens_soft(self) -> int:
-        """Summe der in der Fensterzeit verbrauchten Tokens (system + user + completion)."""
         if self.token_limit == 0:
             return 0
         start, end = self.quota_window_bounds()
@@ -197,21 +195,15 @@ class LLMProvider(models.Model):
         return f"{self.name}"
 
     def clean(self):
+        errors = {}
+        if not self.endpoint:
+            errors["endpoint"] = "Endpoint is required."
+
         try:
-            validate_config_for_type(self.type, self.config)
+            pydantic_config = SCHEMA_REGISTRY[self.type][0]
+            _ = pydantic_config.from_provider(self)
         except ValueError as e:
             raise ValidationError({"config": str(e)})
-
-        errors = {}
-        if self.type in [ProviderType.AZURE_OPENAI, ProviderType.AZURE_AI]:
-            if not self.endpoint:
-                errors["endpoint"] = "Endpoint ist erforderlich."
-            if not self.api_key:
-                errors["api_key"] = "API-Key ist erforderlich."
-        elif self.type == ProviderType.OLLAMA:
-            # Meist nur ein lokaler Endpoint, kein Key erforderlich
-            if not self.endpoint:
-                errors["endpoint"] = "Base-URL/Endpoint ist erforderlich (z. B. http://localhost:11434)."
 
         if errors:
             raise ValidationError(errors)
@@ -222,13 +214,6 @@ class LLMProvider(models.Model):
 
 
 class LLMModel(models.Model):
-    """
-    Konfigurierbares Sprachmodell eines Providers.
-    Beispiel:
-      - external_name: "gpt-4o-mini" (oder "Meta-Llama-3.1-70B")
-      - deployment_name: bei Azure-OpenAI der konkrete Deployment-Name
-    """
-
     provider = models.ForeignKey(
         LLMProvider,
         on_delete=models.PROTECT,
@@ -286,16 +271,10 @@ class LLMModel(models.Model):
         return self.display_name()
 
     def clean(self):
-        """
-        Typabhängige Minimal-Validierung:
-        - Azure OpenAI/Azure AI: Deployment-Name sinnvollerweise Pflicht
-        - Ollama: external_name Pflicht (z. B. 'llama3:8b'), deployment optional
-        """
         errors = {}
 
-        # immer: external_name erforderlich
         if not self.external_name:
-            errors["external_name"] = "Externer Modellname ist erforderlich."
+            errors["external_name"] = "External Name is required."
 
         if errors:
             raise ValidationError(errors)
@@ -416,15 +395,9 @@ class FeedbackCriterionResult(models.Model):
         FeedbackSession, on_delete=models.CASCADE,
         related_name="criteria_results", db_index=True
     )
-    # Client-seitige Kriteriums-ID (aus feedback_data.criteria[i].id)
     client_criterion_id = models.UUIDField(db_index=True)
-
     title = models.TextField(blank=True, null=True)
-
-    # Antwort
     ai_response = models.TextField(blank=True, null=True)
-
-    # LLM / Provider (optional direkte FKs; alternativ: strings)
     llm_model = models.ForeignKey(
         LLMModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="criterion_results"
     )
@@ -433,7 +406,6 @@ class FeedbackCriterionResult(models.Model):
     )
     llm_external_name = models.TextField(blank=True, null=True)  # z.B. "phi4:latest"
 
-    # Usage (normalisiert, gleiche Semantik wie Session)
     tokens_used_system = models.PositiveBigIntegerField(default=0)
     tokens_used_user = models.PositiveBigIntegerField(default=0)
     tokens_used_completion = models.PositiveBigIntegerField(default=0)
