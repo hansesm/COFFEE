@@ -8,10 +8,7 @@ class OllamaConfig(BaseModel):
     verify_ssl: bool = Field(default=True, json_schema_extra={"admin_visible": True})
     auth_token: Optional[str] = Field(default=None, repr=False, json_schema_extra={"admin_visible": False})
     default_model: str = Field(default="phi4:latest", json_schema_extra={"admin_visible": True})
-    model_names: List[str] = Field(default_factory=lambda: ["phi4:latest"], json_schema_extra={"admin_visible": False})
     request_timeout: int = Field(default=60, ge=1, le=600, json_schema_extra={"admin_visible": True})
-    temperature: float = Field(default=0.8, ge=0.0, le=2.0, json_schema_extra={"admin_visible": True})
-    top_p: float = Field(default=0.1, ge=0.0, le=1.0, json_schema_extra={"admin_visible": True})
 
     model_config = ConfigDict(extra='forbid', from_attributes=True)
 
@@ -51,7 +48,10 @@ class AzureAIConfig(BaseModel):
         json_schema_extra={"admin_visible": True},
     )
 
-    # Modelle
+    deployment: str = Field(
+        default="Phi-4",
+        json_schema_extra={"admin_visible": True},
+    )
     default_model: str = Field(
         default="Phi-4",
         json_schema_extra={"admin_visible": True},
@@ -102,61 +102,16 @@ class AzureAIConfig(BaseModel):
             u = f"https://{u}"
         return u
 
-    # -------- Factory aus Provider --------
     @classmethod
-    def from_provider(cls, provider: "Provider") -> "AzureAIConfig":
-        """
-        Erzeugt eine AzureAIConfig aus dem Provider-ORM-Objekt.
-        Priorität:
-          1) provider.endpoint / provider.api_key (Model-Felder)
-          2) provider.config (JSON) mit Alias-Mapping
-          3) Defaults aus diesem Schema
-        """
-        cfg: Dict[str, Any] = {}
-        cfg_json: Dict[str, Any] = (provider.config or {}).copy()
+    def from_provider(cls, provider: "Provider"):
+        data = dict(provider.config or {})
 
-        # Aliase erlauben bequeme Keys in JSON-Config
-        alias_map = {
-            # Verbindung
-            "endpoint": "endpoint",
-            "base_url": "endpoint",
+        if provider.endpoint:
+            data["endpoint"] = provider.endpoint
+        if provider.api_key:
+            data["api_key"] = provider.api_key
 
-            "api_key": "api_key",
-            "key": "api_key",
-
-            "api_version": "api_version",
-            "version": "api_version",
-
-            # Modelle
-            "default_model": "default_model",
-            "model_names": "model_names",
-            "models": "model_names",
-
-            # Inferenz
-            "max_tokens": "max_tokens",
-            "temperature": "temperature",
-            "top_p": "top_p",
-            "presence_penalty": "presence_penalty",
-            "frequency_penalty": "frequency_penalty",
-        }
-
-        for key, value in cfg_json.items():
-            target = alias_map.get(key)
-            if target is None:
-                continue
-            cfg[target] = value
-
-        # Provider-Felder überschreiben JSON (Single Source of Truth)
-        if getattr(provider, "endpoint", None):
-            cfg["endpoint"] = provider.endpoint
-        if getattr(provider, "api_key", None):
-            cfg["api_key"] = provider.api_key
-
-        # Falls nur default_model gesetzt ist, aber keine Liste → Liste ergänzen
-        if "default_model" in cfg and "model_names" not in cfg:
-            cfg["model_names"] = [cfg["default_model"]]
-
-        return cls.model_validate(cfg)
+        return cls.model_validate(data)
 
 
 class AzureOpenAIConfig(BaseModel):
@@ -172,33 +127,15 @@ class AzureOpenAIConfig(BaseModel):
     )
     api_version: str = Field(
         default="2024-12-01-preview",
-        description="Azure OpenAI API Version",
         json_schema_extra={"admin_visible": True},
     )
 
-    # Deployments / Modelle
     default_model: str = Field(
         default="gpt-4o-mini", json_schema_extra={"admin_visible": True}
     )
-    model_names: List[str] = Field(
-        default_factory=lambda: ["gpt-4o-mini"], json_schema_extra={"admin_visible": False}
-    )
 
-    # Inferenz-Parameter
-    max_tokens: int = Field(default=2000, ge=1, json_schema_extra={"admin_visible": True})
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0, json_schema_extra={"admin_visible": True})
-    top_p: float = Field(default=1.0, ge=0.0, le=1.0, json_schema_extra={"admin_visible": True})
-
-    # Request-Timeout (für SDK-Calls)
+    max_retries: int = Field(default=2, ge=0, json_schema_extra={"admin_visible": True})
     request_timeout: int = Field(default=30, ge=1, le=600, json_schema_extra={"admin_visible": True})
-
-    # ---------- Validatoren ----------
-    @field_validator("model_names", mode="before")
-    @classmethod
-    def split_model_names(cls, v):
-        if isinstance(v, str):
-            return [m.strip() for m in v.split(",") if m.strip()]
-        return v
 
     @field_validator("endpoint", mode="before")
     @classmethod
@@ -210,55 +147,13 @@ class AzureOpenAIConfig(BaseModel):
             u = f"https://{u}"
         return u
 
-    # ---------- Factory aus Provider ----------
     @classmethod
-    def from_provider(cls, provider: "Provider") -> "AzureOpenAIConfig":
-        """
-        Baut eine Config aus dem Provider-ORM-Objekt.
-        Priorität:
-          1) provider.endpoint / provider.api_key
-          2) provider.config (JSON) mit Alias-Mapping
-          3) Defaults dieses Schemas
-        """
-        cfg: Dict[str, Any] = {}
-        cfg_json: Dict[str, Any] = (provider.config or {}).copy()
+    def from_provider(cls, provider: "Provider"):
+        data = dict(provider.config or {})
 
-        alias_map = {
-            # Verbindung
-            "endpoint": "endpoint",
-            "base_url": "endpoint",
-            "api_key": "api_key",
-            "key": "api_key",
-            "api_version": "api_version",
-            "version": "api_version",
+        if provider.endpoint:
+            data["endpoint"] = provider.endpoint
+        if provider.api_key:
+            data["api_key"] = provider.api_key
 
-            # Deployments/Modelle
-            "default_model": "default_model",
-            "deployment": "default_model",
-            "model_names": "model_names",
-            "deployments": "model_names",
-
-            # Inferenz
-            "max_tokens": "max_tokens",
-            "temperature": "temperature",
-            "top_p": "top_p",
-
-            # Timeout
-            "timeout": "request_timeout",
-            "request_timeout": "request_timeout",
-        }
-
-        for k, v in cfg_json.items():
-            t = alias_map.get(k)
-            if t:
-                cfg[t] = v
-
-        if getattr(provider, "endpoint", None):
-            cfg["endpoint"] = provider.endpoint
-        if getattr(provider, "api_key", None):
-            cfg["api_key"] = provider.api_key
-
-        if "default_model" in cfg and "model_names" not in cfg:
-            cfg["model_names"] = [cfg["default_model"]]
-
-        return cls.model_validate(cfg)
+        return cls.model_validate(data)

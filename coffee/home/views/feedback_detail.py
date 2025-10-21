@@ -119,10 +119,10 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
 
 
         generator = ai_client.stream(
-            llm_model.external_name,
+            llm_model,
             user_input,
             custom_prompt,
-            on_usage_report=on_usage_report,  # <— wichtig
+            on_usage_report=on_usage_report,
         )
 
         def feeder():

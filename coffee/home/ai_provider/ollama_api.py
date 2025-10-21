@@ -41,11 +41,6 @@ class OllamaClient(AIBaseClient):
             )
         return self._client
 
-    # --- Interface: Modelle aus Settings (wie bei Azure-Variante) ------------
-    def list_models(self) -> List[Dict[str, str]]:
-        models = [{"name": m, "backend": "ollama"} for m in (self.config.model_names or []) if m]
-        logger.info("Konfigurierte Ollama-Modelle: %s", [m["name"] for m in models])
-        return models
 
     # --- Interface: Health-Check ---------------------------------------------
     def test_connection(self, model_name: Optional[str] = None) -> Tuple[bool, str]:
@@ -59,11 +54,15 @@ class OllamaClient(AIBaseClient):
             logger.exception("Ollama list() fehlgeschlagen")
             return False, f"Verbindungsfehler: {e!s}"
 
-    def stream(self, model_name: str, user_input: str, system_prompt: str,
+    def stream(self,
+               llm_model: "LLMModel",
+               user_input: str,
+               system_prompt: str,
                on_usage_report: Optional[Callable[[CoffeeUsage], None]] = None, ) -> Iterable[str]:
         """
         Streamt `message.content`-Deltas.
         """
+        model_name = llm_model.external_name
         try:
             messages = []
             if system_prompt:
@@ -75,12 +74,7 @@ class OllamaClient(AIBaseClient):
                 model=model_name,
                 messages=messages,
                 stream=True,
-                options={
-                    # Annäherung an eure Defaults; bei Ollama heißen Params anders
-                    "temperature": 0.8,
-                    "top_p": 0.1,
-                    # presence/frequency penalties werden nicht von allen Modellen unterstützt
-                },
+                options=llm_model.default_params,
             )
             for chunk in stream:
                 if chunk.get("message", {}).get("content"):
@@ -103,26 +97,3 @@ class OllamaClient(AIBaseClient):
         except Exception as e:
             logger.exception("Ollama Streaming Fehler")
             yield f"Ollama streaming error: {e!s}"
-
-    def generate(self, model_name: str, user_input: str, system_prompt: str) -> str:
-        try:
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": user_input})
-
-            logger.info("Ollama Generate gestartet (model=%s)", model_name)
-            resp = self._client_obj().chat(
-                model=model_name,
-                messages=messages,
-                stream=False,
-                options={
-                    "temperature": 0.8,
-                    "top_p": 0.1,
-                    # num_predict analog zu max_tokens; None = Modellstandard
-                },
-            )
-            return (resp.get("message", {}).get("content") or "").strip()
-        except Exception as e:
-            logger.exception("Ollama Generate Fehler")
-            return f"Ollama generation error: {e!s}"

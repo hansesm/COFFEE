@@ -220,13 +220,10 @@ class LLMModel(models.Model):
         related_name="llm_models",
     )
 
-    # Anzeigename intern (frei wählbar)
     name = models.CharField(max_length=100)
 
-    # Externer Modell-Identifikator (z. B. "gpt-4o", "gpt-4o-mini", "mistral-large")
     external_name = models.CharField(max_length=200)
 
-    # Default-Parameter, die beim Aufruf genutzt werden können (temperature, top_p, max_tokens, etc.)
     default_params = models.JSONField(default=dict, blank=True)
 
     is_active = models.BooleanField(default=True)
