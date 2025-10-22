@@ -15,6 +15,17 @@ from coffee.home.security.admin_mixins import PreserveEncryptedOnEmptyAdminMixin
 
 def test_provider_connection(provider: LLMProvider) -> tuple[bool, str]:
     try:
+        api_key = provider.api_key
+        if not api_key:
+            try:
+                stored_provider = LLMProvider.objects.get(pk=provider.pk)
+                api_key = stored_provider.api_key
+            except LLMProvider.DoesNotExist:
+                raise ValueError("Please provide a API Key!")
+        if not api_key:
+            raise ValueError("Please provide a API Key!")
+
+        provider.api_key = api_key
         provider_config, provider_class = SCHEMA_REGISTRY[provider.type]
         config = provider_config.from_provider(provider)
         test_client = provider_class(config)
@@ -58,6 +69,7 @@ class LLMProviderAdminForm(forms.ModelForm):
         js = ("admin/js/admin/ProviderTypeAutosubmit.js",)
 
     config = forms.JSONField(
+        initial={},
         required=False,
         widget=forms.Textarea(attrs={"rows": 12, "spellcheck": "false", "style": "font-family:monospace"})
     )
