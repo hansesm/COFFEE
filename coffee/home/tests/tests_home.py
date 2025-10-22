@@ -5,8 +5,18 @@ from django.utils import timezone
 from unittest.mock import patch
 import json
 
-from coffee.home.models import Course, Task, Criteria, Feedback, FeedbackCriteria, FeedbackSession
+from coffee.home.models import (
+    Course,
+    Task,
+    Criteria,
+    Feedback,
+    FeedbackCriteria,
+    FeedbackSession,
+    LLMProvider,
+    LLMModel,
+)
 from coffee.home.forms import CourseForm, TaskForm, FeedbackSessionForm
+from coffee.home.registry import ProviderType
 
 
 class CourseModelTest(TestCase):
@@ -265,6 +275,19 @@ class ViewsTest(TestCase):
         )
         self.course.viewing_groups.add(self.group)
         
+        self.provider = LLMProvider.objects.create(
+            name="Test Provider",
+            type=ProviderType.OLLAMA,
+            endpoint="http://localhost:11434",
+            config={"default_model": "test-model"},
+        )
+        self.llm_model = LLMModel.objects.create(
+            provider=self.provider,
+            name="Test Model",
+            external_name="test-model",
+            is_default=True,
+        )
+
         self.task = Task.objects.create(
             title="Assignment 1",
             description="Write a Python program",
@@ -275,7 +298,8 @@ class ViewsTest(TestCase):
             title="Code Quality",
             description="Check code structure",
             prompt="Evaluate ##submission##",
-            course=self.course
+            course=self.course,
+            llm_fk=self.llm_model,
         )
         
         self.feedback = Feedback.objects.create(
@@ -323,7 +347,6 @@ class ViewsTest(TestCase):
             data=json.dumps(data),
             content_type='application/json'
         )
-        
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'successfully')
         
@@ -333,21 +356,38 @@ class ViewsTest(TestCase):
             helpfulness_score="8"
         ).exists())
 
-    @patch('coffee.home.views.stream_chat_response')
-    def test_feedback_stream_view(self, mock_stream):
-        mock_stream.return_value = iter(["Test", " response"])
-        
-        response = self.client.post(
-            reverse('feedback_stream', kwargs={
-                'feedback_uuid': self.feedback.id,
-                'criteria_uuid': self.criteria.id
-            }),
-            {'user_input': 'print("Hello World")'}
+    def test_feedback_stream_view(self):
+        from coffee.home.ai_provider.models import CoffeeUsage
+
+        class DummyConfig:
+            @classmethod
+            def from_provider(cls, provider):
+                return cls()
+
+        class DummyClient:
+            def __init__(self, config):
+                self.config = config
+
+            def stream(self, llm_model, user_input, custom_prompt, on_usage_report=None):
+                if on_usage_report:
+                    on_usage_report(CoffeeUsage())
+                yield "Test chunk "
+                yield "response"
+
+        url = reverse(
+            'feedback_stream',
+            kwargs={'feedback_uuid': self.feedback.id, 'criteria_uuid': self.criteria.id},
         )
-        
+
+        with patch.dict(
+            'coffee.home.views.feedback_detail.SCHEMA_REGISTRY',
+            {self.provider.type: (DummyConfig, DummyClient)},
+            clear=False,
+        ):
+            response = self.client.post(url, {'user_input': 'print("Hello World")'})
+
         self.assertEqual(response.status_code, 200)
-        # The function is called twice in the view - once for generator and once for response
-        self.assertEqual(mock_stream.call_count, 2)
+        self.assertEqual(response['Content-Type'], 'text/event-stream; charset=utf-8')
 
     def test_login_view(self):
         response = self.client.get(reverse('login'))
@@ -551,6 +591,18 @@ class IntegrationTest(TestCase):
             active=True
         )
         self.course.viewing_groups.add(self.group)
+        self.provider = LLMProvider.objects.create(
+            name="Test Provider",
+            type=ProviderType.OLLAMA,
+            endpoint="http://localhost:11434",
+            config={"default_model": "test-model"},
+        )
+        self.llm_model = LLMModel.objects.create(
+            provider=self.provider,
+            name="Test Model",
+            external_name="test-model",
+            is_default=True,
+        )
 
     def test_full_feedback_flow(self):
         # Create task
@@ -565,7 +617,8 @@ class IntegrationTest(TestCase):
             title="Code Quality",
             description="Check code structure",
             prompt="Evaluate ##submission##",
-            course=self.course
+            course=self.course,
+            llm_fk=self.llm_model,
         )
         
         # Create feedback
@@ -594,8 +647,18 @@ class IntegrationTest(TestCase):
                 "helpfulness_score": "8",
                 "criteria": [
                     {
+                        "id": str(criteria.id),
                         "criteria_id": str(criteria.id),
-                        "response": "Good code structure"
+                        "title": criteria.title,
+                        "response": "Good code structure",
+                        "ai_response": "Good code structure",
+                        "llm_model_id": str(self.llm_model.id),
+                        "usage": {
+                            "tokens_used_system": 10,
+                            "tokens_used_user": 20,
+                            "tokens_used_completion": 30,
+                            "total_duration_ns": 0,
+                        },
                     }
                 ]
             }
@@ -606,7 +669,6 @@ class IntegrationTest(TestCase):
             data=json.dumps(data),
             content_type='application/json'
         )
-        
         self.assertEqual(response.status_code, 200)
         
         # Verify feedback session was created
@@ -616,63 +678,3 @@ class IntegrationTest(TestCase):
         )
         self.assertEqual(feedback_session.feedback, feedback)
         self.assertEqual(feedback_session.course, self.course)
-
-
-class OllamaConfigTest(TestCase):
-    def test_ollama_config_function(self):
-        from coffee.home.ai_provider.ollama_api import get_ollama_config
-        
-        config = get_ollama_config()
-        
-        # Check that all expected config keys are present
-        expected_keys = [
-            'primary_host', 'fallback_host', 'verify_ssl', 'default_model',
-            'request_timeout', 'enable_fallback', 'has_primary_auth', 'has_fallback_auth'
-        ]
-        
-        for key in expected_keys:
-            self.assertIn(key, config)
-        
-        # Check that config values are of expected types
-        self.assertIsInstance(config['primary_host'], str)
-        self.assertIsInstance(config['fallback_host'], str)
-        self.assertIsInstance(config['verify_ssl'], bool)
-        self.assertIsInstance(config['default_model'], str)
-        self.assertIsInstance(config['request_timeout'], int)
-        self.assertIsInstance(config['enable_fallback'], bool)
-        self.assertIsInstance(config['has_primary_auth'], bool)
-        self.assertIsInstance(config['has_fallback_auth'], bool)
-
-    def test_ollama_headers(self):
-        from coffee.home.ai_provider.ollama_api import get_primary_headers, get_fallback_headers
-        
-        primary_headers = get_primary_headers()
-        fallback_headers = get_fallback_headers()
-        
-        # Check that headers contain Content-Type
-        self.assertIn('Content-Type', primary_headers)
-        self.assertIn('Content-Type', fallback_headers)
-        self.assertEqual(primary_headers['Content-Type'], 'application/json')
-        self.assertEqual(fallback_headers['Content-Type'], 'application/json')
-
-    @patch('coffee.ai_provider.ollama_api.Client')
-    def test_get_client_with_settings(self, mock_client):
-        from coffee.home.ai_provider.ollama_api import get_client
-        from django.conf import settings
-        
-        # Mock the client.list() method to avoid actual API calls
-        mock_instance = mock_client.return_value
-        mock_instance.list.return_value = None
-        
-        client = get_client()
-        
-        # Verify that Client was called with correct parameters
-        mock_client.assert_called_with(
-            host=settings.OLLAMA_PRIMARY_HOST,
-            headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {settings.OLLAMA_PRIMARY_AUTH_TOKEN}'},
-            verify=settings.OLLAMA_VERIFY_SSL,
-            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
-        )
-        
-        # Verify that list() was called to test connectivity
-        mock_instance.list.assert_called_once()
