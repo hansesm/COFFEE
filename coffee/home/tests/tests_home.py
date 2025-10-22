@@ -679,3 +679,145 @@ class IntegrationTest(TestCase):
         )
         self.assertEqual(feedback_session.feedback, feedback)
         self.assertEqual(feedback_session.course, self.course)
+
+
+class LLMModelAssignmentsViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.group = Group.objects.create(name="lecturer")
+        self.user = User.objects.create_user(
+            username="lecturer",
+            password="pass1234",
+        )
+        self.user.groups.add(self.group)
+
+        self.course = Course.objects.create(
+            faculty="Informatik",
+            study_programme="KI Systeme",
+            chair="Didaktik",
+            course_name="Einführung in KI",
+            course_number="KI-101",
+            term="2024WS",
+            active=True,
+        )
+        self.course.viewing_groups.add(self.group)
+
+        self.provider = LLMProvider.objects.create(
+            name="Lokaler Provider",
+            type=ProviderType.OLLAMA,
+            config={},
+            endpoint="http://localhost:11434",
+            is_active=True,
+        )
+
+        self.llm = LLMModel.objects.create(
+            provider=self.provider,
+            name="Phi-4",
+            external_name="phi-4",
+            is_active=True,
+        )
+
+        self.task = Task.objects.create(
+            title="Analyse Aufgabe",
+            description="Bewerten Sie den Text.",
+            course=self.course,
+            active=True,
+        )
+
+        self.feedback = Feedback.objects.create(
+            task=self.task,
+            course=self.course,
+            active=True,
+        )
+
+        self.criteria_assigned = Criteria.objects.create(
+            title="Struktur",
+            description="Bewerte die Struktur.",
+            prompt="Bewerte ##submission##.",
+            llm_fk=self.llm,
+            course=self.course,
+            active=True,
+        )
+
+        FeedbackCriteria.objects.create(
+            feedback=self.feedback,
+            criteria=self.criteria_assigned,
+            rank=2,
+        )
+
+        self.criteria_unassigned = Criteria.objects.create(
+            title="Sprache",
+            description="Hinweise zur Sprache",
+            prompt="Analysiere ##submission##.",
+            llm_fk=self.llm,
+            course=self.course,
+            active=True,
+        )
+
+        # Nicht sichtbarer Kurs/Task
+        other_course = Course.objects.create(
+            faculty="Informatik",
+            study_programme="KI Systeme",
+            chair="Didaktik",
+            course_name="Verdeckter Kurs",
+            course_number="KI-999",
+            term="2024WS",
+            active=True,
+        )
+
+        other_task = Task.objects.create(
+            title="Verdeckte Aufgabe",
+            course=other_course,
+            active=True,
+        )
+
+        other_feedback = Feedback.objects.create(
+            task=other_task,
+            course=other_course,
+            active=True,
+        )
+
+        other_criteria = Criteria.objects.create(
+            title="Verdeckt",
+            prompt="Nur intern.",
+            llm_fk=self.llm,
+            course=other_course,
+            active=True,
+        )
+
+        FeedbackCriteria.objects.create(
+            feedback=other_feedback,
+            criteria=other_criteria,
+            rank=1,
+        )
+
+    def test_login_required(self):
+        response = self.client.get(reverse("llm_assignments"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_hierarchy_for_accessible_courses(self):
+        logged_in = self.client.login(username="lecturer", password="pass1234")
+        self.assertTrue(logged_in)
+
+        response = self.client.get(reverse("llm_assignments"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "pages/llm_model_assignments.html")
+
+        hierarchy = response.context["llm_hierarchy"]
+        self.assertEqual(len(hierarchy), 1)
+
+        llm_block = hierarchy[0]
+        self.assertEqual(llm_block["llm"], self.llm)
+        self.assertEqual(llm_block["course_count"], 1)
+
+        course_block = llm_block["courses"][0]
+        self.assertEqual(course_block["course"], self.course)
+        self.assertEqual(course_block["task_count"], 1)
+
+        task_block = course_block["tasks"][0]
+        self.assertEqual(task_block["task"], self.task)
+
+        criterion_titles = [entry["criterion"].title for entry in task_block["criteria"]]
+        self.assertIn(self.criteria_assigned.title, criterion_titles)
+        self.assertIn(self.criteria_unassigned, course_block["unassigned"])

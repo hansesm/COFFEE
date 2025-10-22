@@ -74,6 +74,13 @@
               <span>{% trans 'Metrics' %}</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="/models/assignments/"
+               class="nav-link {% if request.path == '/models/assignments/' %}active{% endif %}">
+              <i class="fas fa-network-wired me-2"></i>
+              <span>{% trans 'Modell-Zuordnung' %}</span>
+            </a>
+          </li>
         </ul>
       </li>
     {% endif %}

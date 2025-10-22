@@ -4,5 +4,6 @@ from coffee.home.views.criteria import *
 from coffee.home.views.feedback_admin import *
 from coffee.home.views.feedback_detail import *
 from coffee.home.views.feedback_list import *
+from coffee.home.views.llm_overview import *
 from coffee.home.views.policies import *
 from coffee.home.views.task import *
