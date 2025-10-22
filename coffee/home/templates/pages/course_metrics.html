@@ -10,7 +10,7 @@
 
     <!-- Filter -->
     <form id="metrics-filter" method="get" class="row g-3 align-items-end mb-3">
-        <div class="col-6 col-md-6">
+        <div class="col-12 col-md-6">
             <label for="course_id" class="form-label">{% trans "Kurs auswählen" %}</label>
             <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
                 {% for c in courses %}
@@ -23,7 +23,7 @@
             </select>
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-md-3">
             <label class="form-label">{% trans "Start" %}</label>
             <input type="datetime-local"
                    class="form-control"
@@ -32,7 +32,7 @@
                    onchange="this.form.submit()">
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-md-3">
             <label class="form-label">{% trans "Ende" %}</label>
             <input type="datetime-local"
                    class="form-control"
@@ -44,7 +44,7 @@
 
     <!-- KPIs -->
     <div class="row g-4 mb-3">
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="text-uppercase text-muted small">{% trans "Sessions (gesamt)" %}</div>
@@ -52,7 +52,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="text-uppercase text-muted small">{% trans "Tokens (gesamt)" %}</div>
@@ -60,7 +60,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="text-uppercase text-muted small">{% trans "Ø Helpfulness" %}</div>
@@ -72,7 +72,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="text-uppercase text-muted small">{% trans "Ø Dauer (s)" %}</div>
@@ -87,23 +87,22 @@
     </div>
 
     <div class="card shadow-sm mb-4">
-        <div class="col-6 col-md-2 mb-4 mx-4 my-2">
-            <label class="form-label">{% trans "Zeitraum" %}</label>
-            <select class="form-select" name="bucket" onchange="this.form.submit()" form="metrics-filter">
-                <option value="day" {% if bucket == 'day' %}selected{% endif %}>{% trans "pro Tag" %}</option>
-                <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "pro Woche" %}</option>
-                <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "pro Monat" %}</option>
-            </select>
-        </div>
-
-
-        <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
-        <div class="card shadow-sm mb-4 mx-4">
-            <div class="card-body">
-                <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
-                <div class="chart-wrap" style="height:220px;">
-                    <canvas id="calls_line_chart"></canvas>
+        <div class="card-body">
+            <div class="row g-3 align-items-end mb-4">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                    <label class="form-label">{% trans "Zeitraum" %}</label>
+                    <select class="form-select" name="bucket" onchange="this.form.submit()" form="metrics-filter">
+                        <option value="day" {% if bucket == 'day' %}selected{% endif %}>{% trans "pro Tag" %}</option>
+                        <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "pro Woche" %}</option>
+                        <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "pro Monat" %}</option>
+                    </select>
                 </div>
+            </div>
+
+            <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
+            <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
+            <div class="chart-wrap" style="height:220px;">
+                <canvas id="calls_line_chart"></canvas>
             </div>
         </div>
         {{ calls_rows|json_script:"calls-data" }}
@@ -164,7 +163,7 @@
     <h5 class="mb-3">{% trans "Helpfulness-Abdeckung pro Aufgabe" %}</h5>
 
     <div class="table-responsive">
-      <table class="table table-sm table-striped table-hover align-middle nowrap w-100">
+      <table class="table table-sm table-striped table-hover align-middle w-100">
         <thead class="table-light">
           <tr>
             <th>{% trans "Aufgabe" %}</th>
@@ -180,7 +179,7 @@
         <tbody>
           {% for r in help_coverage_per_task %}
             <tr>
-              <td class="text-truncate" style="max-width: 420px;">{{ r.task }}</td>
+              <td class="text-break" style="max-width: 420px;">{{ r.task }}</td>
                 <td class="text-end">{{ r.pct_with|floatformat:1 }}%</td>
                 <td class="text-end">{{ r.pct_without|floatformat:1 }}%</td>
               <td class="text-end">{{ r.with_help|intcomma }}</td>
@@ -451,4 +450,3 @@
   });
 </script>
 {% endblock scripts %}
-
