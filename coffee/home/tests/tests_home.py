@@ -1,10 +1,12 @@
-from django.test import TestCase, Client
+import json
+from unittest.mock import patch
+
 from django.contrib.auth.models import User, Group
+from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import patch
-import json
 
+from coffee.home.forms import CourseForm, TaskForm, FeedbackSessionForm
 from coffee.home.models import (
     Course,
     Task,
@@ -15,7 +17,6 @@ from coffee.home.models import (
     LLMProvider,
     LLMModel,
 )
-from coffee.home.forms import CourseForm, TaskForm, FeedbackSessionForm
 from coffee.home.registry import ProviderType
 
 
@@ -27,7 +28,7 @@ class CourseModelTest(TestCase):
             password="testpassword"
         )
         self.user.groups.add(self.group)
-        
+
         self.course = Course.objects.create(
             faculty="Computer Science",
             study_programme="Software Engineering",
@@ -51,7 +52,7 @@ class CourseModelTest(TestCase):
 
     def test_can_edit_permission(self):
         self.assertTrue(self.course.can_edit(self.user))
-        
+
         other_user = User.objects.create_user(
             username="otheruser",
             password="testpassword"
@@ -60,7 +61,7 @@ class CourseModelTest(TestCase):
 
     def test_can_view_permission(self):
         self.assertTrue(self.course.can_view(self.user))
-        
+
         other_user = User.objects.create_user(
             username="otheruser",
             password="testpassword"
@@ -84,7 +85,7 @@ class TaskModelTest(TestCase):
             course_name="Python Programming",
             active=True
         )
-        
+
         self.task = Task.objects.create(
             title="Assignment 1",
             description="Write a Python program",
@@ -122,7 +123,7 @@ class CriteriaModelTest(TestCase):
             course_name="Python Programming",
             active=True
         )
-        
+
         self.criteria = Criteria.objects.create(
             title="Code Quality",
             description="Check code structure and readability",
@@ -155,20 +156,20 @@ class FeedbackModelTest(TestCase):
             course_name="Python Programming",
             active=True
         )
-        
+
         self.task = Task.objects.create(
             title="Assignment 1",
             description="Write a Python program",
             course=self.course
         )
-        
+
         self.criteria = Criteria.objects.create(
             title="Code Quality",
             description="Check code structure",
             prompt="Evaluate ##submission##",
             course=self.course
         )
-        
+
         self.feedback = Feedback.objects.create(
             task=self.task,
             course=self.course,
@@ -190,7 +191,7 @@ class FeedbackModelTest(TestCase):
             criteria=self.criteria,
             rank=1
         )
-        
+
         self.assertEqual(self.feedback.criteria_set.count(), 1)
         self.assertEqual(self.feedback.criteria_set.first(), self.criteria)
 
@@ -200,10 +201,10 @@ class FeedbackModelTest(TestCase):
             criteria=self.criteria,
             rank=1
         )
-        
+
         json_data = self.feedback.get_criteria_set_json()
         parsed_data = json.loads(json_data)
-        
+
         self.assertEqual(len(parsed_data), 1)
         self.assertEqual(parsed_data[0]['criteria__title'], 'Code Quality')
         self.assertEqual(parsed_data[0]['rank'], 1)
@@ -218,18 +219,18 @@ class FeedbackSessionModelTest(TestCase):
             course_name="Python Programming",
             active=True
         )
-        
+
         self.task = Task.objects.create(
             title="Assignment 1",
             description="Write a Python program",
             course=self.course
         )
-        
+
         self.feedback = Feedback.objects.create(
             task=self.task,
             course=self.course
         )
-        
+
         self.feedback_session = FeedbackSession.objects.create(
             submission="print('Hello World')",
             feedback_data={"criteria": []},
@@ -265,7 +266,7 @@ class ViewsTest(TestCase):
             password="testpassword"
         )
         self.user.groups.add(self.group)
-        
+
         self.course = Course.objects.create(
             faculty="Computer Science",
             study_programme="Software Engineering",
@@ -274,7 +275,7 @@ class ViewsTest(TestCase):
             active=True
         )
         self.course.viewing_groups.add(self.group)
-        
+
         self.provider = LLMProvider.objects.create(
             name="Test Provider",
             type=ProviderType.OLLAMA,
@@ -293,7 +294,7 @@ class ViewsTest(TestCase):
             description="Write a Python program",
             course=self.course
         )
-        
+
         self.criteria = Criteria.objects.create(
             title="Code Quality",
             description="Check code structure",
@@ -301,7 +302,7 @@ class ViewsTest(TestCase):
             course=self.course,
             llm_fk=self.llm_model,
         )
-        
+
         self.feedback = Feedback.objects.create(
             task=self.task,
             course=self.course
@@ -341,7 +342,7 @@ class ViewsTest(TestCase):
                 "criteria": []
             }
         }
-        
+
         response = self.client.post(
             reverse('save_feedback_session'),
             data=json.dumps(data),
@@ -349,7 +350,7 @@ class ViewsTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'successfully')
-        
+
         # Check that session was created
         self.assertTrue(FeedbackSession.objects.filter(
             submission="print('Hello World')",
@@ -380,9 +381,9 @@ class ViewsTest(TestCase):
         )
 
         with patch.dict(
-            'coffee.home.views.feedback_detail.SCHEMA_REGISTRY',
-            {self.provider.type: (DummyConfig, DummyClient)},
-            clear=False,
+                'coffee.home.views.feedback_detail.SCHEMA_REGISTRY',
+                {self.provider.type: (DummyConfig, DummyClient)},
+                clear=False,
         ):
             response = self.client.post(url, {'user_input': 'print("Hello World")'})
 
@@ -414,7 +415,7 @@ class AuthenticatedViewsTest(TestCase):
         )
         self.user.groups.add(self.group)
         self.user.groups.add(self.manager_group)
-        
+
         # Add required permissions
         from django.contrib.auth.models import Permission
         permissions = [
@@ -429,7 +430,7 @@ class AuthenticatedViewsTest(TestCase):
                 self.user.user_permissions.add(permission)
             except Permission.DoesNotExist:
                 pass
-        
+
         self.course = Course.objects.create(
             faculty="Computer Science",
             study_programme="Software Engineering",
@@ -447,7 +448,7 @@ class AuthenticatedViewsTest(TestCase):
 
     def test_crud_course_create(self):
         self.client.login(username='testuser', password='testpassword')
-        
+
         data = {
             'request_type': 'update',
             'faculty': 'Engineering',
@@ -459,10 +460,10 @@ class AuthenticatedViewsTest(TestCase):
             'active': 'true',
             'course_context': 'Advanced Python concepts'
         }
-        
+
         response = self.client.post(reverse('course'), data)
         self.assertEqual(response.status_code, 200)
-        
+
         # Check if course was created
         self.assertTrue(Course.objects.filter(course_name='Advanced Python').exists())
 
@@ -515,19 +516,19 @@ class PermissionTest(TestCase):
     def setUp(self):
         self.group1 = Group.objects.create(name="Group1")
         self.group2 = Group.objects.create(name="Group2")
-        
+
         self.user1 = User.objects.create_user(
             username="user1",
             password="testpassword"
         )
         self.user1.groups.add(self.group1)
-        
+
         self.user2 = User.objects.create_user(
             username="user2",
             password="testpassword"
         )
         self.user2.groups.add(self.group2)
-        
+
         self.course = Course.objects.create(
             faculty="Computer Science",
             study_programme="Software Engineering",
@@ -540,7 +541,7 @@ class PermissionTest(TestCase):
 
     def test_permission_check_with_edit_access(self):
         from coffee.home.views import check_permissions_and_group
-        
+
         # Add required permission
         from django.contrib.auth.models import Permission
         try:
@@ -548,7 +549,7 @@ class PermissionTest(TestCase):
             self.user1.user_permissions.add(permission)
         except Permission.DoesNotExist:
             pass
-        
+
         has_permission, error = check_permissions_and_group(
             self.user1, self.course, 'change'
         )
@@ -557,7 +558,7 @@ class PermissionTest(TestCase):
 
     def test_permission_check_without_group_access(self):
         from coffee.home.views import check_permissions_and_group
-        
+
         # Add required permission
         from django.contrib.auth.models import Permission
         try:
@@ -565,7 +566,7 @@ class PermissionTest(TestCase):
             self.user2.user_permissions.add(permission)
         except Permission.DoesNotExist:
             pass
-        
+
         has_permission, error = check_permissions_and_group(
             self.user2, self.course, 'change'
         )
@@ -582,7 +583,7 @@ class IntegrationTest(TestCase):
             password="testpassword"
         )
         self.user.groups.add(self.group)
-        
+
         self.course = Course.objects.create(
             faculty="Computer Science",
             study_programme="Software Engineering",
@@ -611,7 +612,7 @@ class IntegrationTest(TestCase):
             description="Write a Python program",
             course=self.course
         )
-        
+
         # Create criteria
         criteria = Criteria.objects.create(
             title="Code Quality",
@@ -620,24 +621,24 @@ class IntegrationTest(TestCase):
             course=self.course,
             llm_fk=self.llm_model,
         )
-        
+
         # Create feedback
         feedback = Feedback.objects.create(
             task=task,
             course=self.course
         )
-        
+
         # Create feedback criteria relationship
         FeedbackCriteria.objects.create(
             feedback=feedback,
             criteria=criteria,
             rank=1
         )
-        
+
         # Access feedback page
         response = self.client.get(reverse('feedback', kwargs={'id': feedback.id}))
         self.assertEqual(response.status_code, 200)
-        
+
         # Submit feedback session
         data = {
             "feedback_data": {
@@ -663,14 +664,14 @@ class IntegrationTest(TestCase):
                 ]
             }
         }
-        
+
         response = self.client.post(
             reverse('save_feedback_session'),
             data=json.dumps(data),
             content_type='application/json'
         )
         self.assertEqual(response.status_code, 200)
-        
+
         # Verify feedback session was created
         feedback_session = FeedbackSession.objects.get(
             submission="print('Hello World')",
