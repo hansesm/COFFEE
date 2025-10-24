@@ -46,6 +46,7 @@ USE_TZ = True
 
 # Logging configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+AZURE_HTTP_LOG_LEVEL = os.getenv("AZURE_HTTP_LOG_LEVEL", "WARNING")
 
 LOGGING = {
     "version": 1,
@@ -84,6 +85,36 @@ LOGGING = {
         "coffee.home": {
             "handlers": ["console"],
             "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "uvicorn": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "uvicorn.asgi": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "azure": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "azure.core.pipeline.policies.http_logging_policy": {
+            "handlers": ["console"],
+            "level": AZURE_HTTP_LOG_LEVEL,
             "propagate": False,
         },
     },
