@@ -6,7 +6,6 @@ AI-powered feedback system for educational institutions using Django and Large L
 
 1. **Prerequisites**
 - Install [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
-- Install [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
 
 2. **Clone and setup**
    ```bash
@@ -57,25 +56,17 @@ All configuration is environment-based. Copy `.env.example` to `.env` and custom
 SECRET_KEY=your-secret-key-here  
 DEBUG=True
 DATABASE_URL=postgres://user:pass@localhost:5432/coffee_db
-
-# Ollama Backend (REQUIRED - at least one LLM backend needed)
-OLLAMA_PRIMARY_HOST=https://your-ollama-host.com
-OLLAMA_PRIMARY_AUTH_TOKEN=your-token
 ```
+### Custom LLM Providers
 
-### Optional Settings
-```env
-# Azure OpenAI Backend (alternative to Ollama)
-AZURE_OPENAI_API_KEY=your-key
-AZURE_OPENAI_ENDPOINT=https://your-endpoint.com
+You can add your own **LLM Providers** and **LLM Models** in the Django Admin Panel (`<BASE_URL>/admin`).
 
-# Customize backend display names in UI
-LLM_OLLAMA_DISPLAY_NAME=Local AI
-LLM_AZURE_OPENAI_DISPLAY_NAME=FernUni
+Currently supported LLM Providers:
+- **Ollama** – see [`ollama_api.py`](coffee/home/ai_provider/ollama_api.py)
+- **Azure** – see [`azure_ai_api.py`](coffee/home/ai_provider/azure_ai_api.py)
+- **Azure OpenAI** – see [`azure_openai_api.py`](coffee/home/ai_provider/azure_openai_api.py)
 
-# Advanced settings (SSL, timeouts, fallback hosts)
-# See .env.example for all available options
-```
+Contributions for additional providers such as **LLM Lite**, **AWS Bedrock**, **Hugging Face**, and others are very welcome! 🚀
 
 ## Docker Deployment
 
