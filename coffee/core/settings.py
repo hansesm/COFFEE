@@ -10,7 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import os, random, string
+import os
+import random
+import string
+import tomllib
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -20,6 +23,23 @@ load_dotenv()  # take environment variables from .env.
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+PYPROJECT_FILE = BASE_DIR.parent / "pyproject.toml"
+
+
+def _project_version() -> str:
+    """
+    Returns the application version. Prefers APP_VERSION env var,
+    otherwise reads it from pyproject.toml.
+    """
+    if version_from_env := os.getenv("APP_VERSION"):
+        return version_from_env
+
+    try:
+        with PYPROJECT_FILE.open("rb") as handle:
+            data = tomllib.load(handle)
+        return data.get("project", {}).get("version", "0.0.0")
+    except (FileNotFoundError, tomllib.TOMLDecodeError, AttributeError, TypeError):
+        return "0.0.0"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -34,10 +54,8 @@ DEBUG = os.environ.get("DEBUG")
 if not DEBUG:
     DEBUG = "False"
 
-from django.utils.translation import gettext_lazy as _
-
 # Application Version
-APP_VERSION = "1.3"
+APP_VERSION = _project_version()
 
 # Enable internationalization
 USE_I18N = True
