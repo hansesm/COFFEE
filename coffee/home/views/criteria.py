@@ -17,6 +17,9 @@ from coffee.home.views.utils import check_permissions_and_group
 from coffee.home.models import LLMModel
 
 
+logger = logging.getLogger(__name__)
+
+
 class CrudCriteriaView(ManagerRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         # Show criteria for courses the user can view (either through viewing_groups OR editing_groups)
@@ -35,14 +38,14 @@ class CrudCriteriaView(ManagerRequiredMixin, View):
         llm_models_error = None
 
         try:
-            logging.info("Attempting to fetch LLM models from all backends...")
+            logger.info("Attempting to fetch LLM models from all backends...")
             llm_models = LLMModel.objects.filter(is_active=True)
-            logging.info("Successfully fetched %d LLM models from all backends", len(llm_models))
+            logger.info("Successfully fetched %d LLM models from all backends", len(llm_models))
         except Exception as e:
-            logging.error("Failed to fetch LLM models: %s", e)
+            logger.error("Failed to fetch LLM models: %s", e)
             llm_models = []
             llm_models_error = str(e)
-            logging.info("Continuing with empty LLM models list due to error")
+            logger.info("Continuing with empty LLM models list due to error")
 
         return render(
             request,

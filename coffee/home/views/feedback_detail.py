@@ -26,6 +26,9 @@ from coffee.home.ai_provider.models import CoffeeUsage
 from coffee.home.views.streaming import sse_event
 
 
+logger = logging.getLogger(__name__)
+
+
 def feedback(request, id):
     form = FeedbackSessionForm()
     feedback_obj = get_object_or_404(Feedback, id=id)
@@ -89,7 +92,7 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
         config = provider_config.from_provider(provider)
         ai_client: AIBaseClient = provider_class(config)
 
-        logging.info(f"Using model: {llm_model}")
+        logger.info("Using model: %s", llm_model)
 
         loop = asyncio.get_running_loop()
         q: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=32)
@@ -103,7 +106,7 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
                 data = report.model_dump()
                 asyncio.run_coroutine_threadsafe(q.put(sse_event("usage", data)), loop)
             except Exception:
-                logging.exception("on_usage_report failed")
+                logger.exception("on_usage_report failed")
 
         provider: LLMProvider = provider
         reset_anchor = provider.last_reset_at
@@ -114,7 +117,7 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
         await sync_to_async(provider.roll_window_optimistic)()
         quoata_exceeded = await sync_to_async(provider.soft_limit_exceeded)(0)
         if quoata_exceeded:
-            logging.warning("Quota exceeded")
+            logger.warning("Quota exceeded")
             return HttpResponseBadRequest("Quota exceeded. Try again at " + formatted)
 
 
@@ -153,7 +156,7 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
                     )
 
             except Exception as e:
-                logging.exception("stream feeder failed")
+                logger.exception("stream feeder failed")
                 asyncio.run_coroutine_threadsafe(
                     q.put(sse_event("error", {"message": str(e)})), loop
                 )
@@ -179,6 +182,6 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
         resp["X-Accel-Buffering"] = "no"
         resp["Connection"] = "keep-alive"
         return resp
-    except Exception as e:
-        logging.exception("Error generating streaming response:")
+    except Exception:
+        logger.exception("Error generating streaming response:")
         return HttpResponseBadRequest("An error occurred while generating the response.")
