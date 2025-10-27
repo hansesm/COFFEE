@@ -3,10 +3,7 @@
 {% load humanize %}
 {% block content %}
 <div class="container-fluid py-4">
-    <h2 class="mb-3">
-        {% trans "Course Metrics" %}
-        {% if selected_course_name %}<small class="text-muted">— {{ selected_course_name }}</small>{% endif %}
-    </h2>
+    <h2 class="mb-3">{% trans "Course Metrics" %} {% trans "per selected time range" %}</h2>
 
     <!-- Filter -->
     <form id="metrics-filter" method="get" class="row g-3 align-items-end mb-3">

@@ -303,6 +303,10 @@ msgstr "pro Woche"
 msgid "per month"
 msgstr "pro Monat"
 
+#: home/templates/pages/course_metrics.html:6
+msgid "per selected time range"
+msgstr "pro ausgewähltem Zeitraum"
+
 #: home/templates/pages/course_metrics.html:103 home/templates/pages/course_metrics.html:237 home/templates/pages/course_metrics.html:252 home/templates/pages/course_metrics.html:403 home/templates/pages/course_metrics.html:417
 msgid "Views"
 msgstr "Aufrufe"
