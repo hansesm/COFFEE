@@ -5,13 +5,13 @@
 <div class="container-fluid py-4">
   <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
     <div>
-      <h2 class="mb-1">{% trans "Zuordnungs-Explorer" %}</h2>
+      <h2 class="mb-1">{% trans "Assignment Explorer" %}</h2>
       <p class="text-muted small mb-0">
-        {% trans "Erkunden Sie die Zuordnungen zwischen Kriterien, Aufgaben, Kursen und Sprachmodellen." %}
+        {% trans "Explore the assignments between criteria, tasks, courses, and language models." %}
       </p>
     </div>
     <form method="get" class="d-flex flex-column flex-sm-row gap-2 align-items-sm-end">
-      <label for="pivot-select" class="text-muted small mb-0">{% trans "Einstiegsebene" %}</label>
+      <label for="pivot-select" class="text-muted small mb-0">{% trans "Starting level" %}</label>
       <select id="pivot-select"
               name="pivot"
               class="form-select form-select-sm"
@@ -25,11 +25,11 @@
 
   {% if visible_course_count == 0 %}
     <div class="alert alert-warning" role="alert">
-      {% trans "Für Ihre Nutzergruppe sind derzeit keine Kurse freigeschaltet." %}
+      {% trans "No courses are currently available for your user group." %}
     </div>
   {% elif not hierarchy %}
     <div class="alert alert-info" role="alert">
-      {% trans "Es liegen noch keine Zuordnungen von Kriterien zu Sprachmodellen vor." %}
+      {% trans "No assignments between criteria and language models exist yet." %}
     </div>
   {% else %}
     {% if pivot == 'llm' %}
@@ -55,12 +55,12 @@
                     </div>
                     <div class="text-muted small d-flex gap-3 align-items-center">
                       <span class="badge bg-light text-dark">
-                        {{ llm_block.course_count }} {% blocktrans count llm_block.course_count as course_count %}
-                        Kurs{% plural %}Kurse{% endblocktrans %}
+                        {{ llm_block.course_count }} {% blocktrans count llm_block.course_count as course_count context "assignment explorer|course count label" %}
+                        Course{% plural %}Courses{% endblocktrans %}
                       </span>
                       <span class="badge bg-light text-dark">
-                        {{ llm_block.criteria_count }} {% blocktrans count llm_block.criteria_count as criteria_count %}
-                        Kriterium{% plural %}Kriterien{% endblocktrans %}
+                        {{ llm_block.criteria_count }} {% blocktrans count llm_block.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                        Criterion{% plural %}Criteria{% endblocktrans %}
                       </span>
                     </div>
                   </div>
@@ -87,12 +87,12 @@
                         </div>
                         <div class="text-muted small d-flex gap-3 align-items-center">
                           <span>
-                            {{ course_block.task_count }} {% blocktrans count course_block.task_count as task_count %}
-                            Aufgabe{% plural %}Aufgaben{% endblocktrans %}
+                            {{ course_block.task_count }} {% blocktrans count course_block.task_count as task_count context "assignment explorer|task count label" %}
+                            Task{% plural %}Tasks{% endblocktrans %}
                           </span>
                           <span>
-                            {{ course_block.criteria_count }} {% blocktrans count course_block.criteria_count as criteria_count %}
-                            Kriterium{% plural %}Kriterien{% endblocktrans %}
+                            {{ course_block.criteria_count }} {% blocktrans count course_block.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                            Criterion{% plural %}Criteria{% endblocktrans %}
                           </span>
                         </div>
                       </div>
@@ -114,9 +114,9 @@
                                 </div>
                                 <div>
                                   {% if task_block.task.active %}
-                                    <span class="badge bg-success">{% trans "aktiv" %}</span>
+                                    <span class="badge bg-success">{% trans "Active" %}</span>
                                   {% else %}
-                                    <span class="badge bg-secondary">{% trans "inaktiv" %}</span>
+                                    <span class="badge bg-secondary">{% trans "Inactive" %}</span>
                                   {% endif %}
                                 </div>
                               </div>
@@ -125,12 +125,12 @@
                                   <li class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                     {% if entry.rank %}
                                       <span class="badge bg-primary fw-semibold">
-                                        {% trans "Rang" %} {{ entry.rank }}
+                                    {% trans "Rank" %} {{ entry.rank }}
                                       </span>
                                     {% endif %}
                                     <span class="fw-semibold">{{ entry.criterion.title }}</span>
                                     {% if entry.criterion.active == False %}
-                                      <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                                      <span class="badge bg-warning">{% trans "Inactive" %}</span>
                                     {% endif %}
                                     {% if entry.criterion.tag %}
                                       <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
@@ -143,21 +143,21 @@
                         </div>
                       {% else %}
                         <div class="alert alert-secondary mb-0" role="alert">
-                          {% trans "Für diesen Kurs sind derzeit keine Aufgaben mit diesem Sprachmodell verknüpft." %}
+                          {% trans "No tasks are currently linked to this language model for this course." %}
                         </div>
                       {% endif %}
 
                       {% if course_block.unassigned %}
                         <div class="alert alert-light border-start border-3 border-warning mt-3 mb-0" role="alert">
                           <div class="fw-semibold mb-2">
-                            {% trans "Kriterien ohne Aufgabe" %}
+                            {% trans "Criteria without task" %}
                           </div>
                           <ul class="mb-0 ps-3">
                             {% for criterion in course_block.unassigned %}
                               <li class="mb-1">
                                 {{ criterion.title }}
                                 {% if criterion.active == False %}
-                                  <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                                  <span class="badge bg-warning">{% trans "Inactive" %}</span>
                                 {% endif %}
                                 {% if criterion.tag %}
                                   <span class="badge bg-light text-dark">{{ criterion.tag }}</span>
@@ -196,21 +196,21 @@
                       <span class="badge bg-light text-dark">{{ item.criterion.tag }}</span>
                     {% endif %}
                     {% if item.criterion.active == False %}
-                      <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                      <span class="badge bg-warning">{% trans "Inactive" %}</span>
                     {% endif %}
                   </div>
                 </div>
 
                 {% if item.tasks %}
                   <div class="mt-2">
-                    <div class="fw-semibold small mb-2">{% trans "Verknüpfte Aufgaben" %}</div>
+                    <div class="fw-semibold small mb-2">{% trans "Linked tasks" %}</div>
                     <ul class="list-unstyled mb-0 small">
                       {% for task in item.tasks %}
                         <li class="mb-2">
                           <div class="d-flex flex-wrap gap-2 align-items-center">
                             <span class="fw-semibold">{{ task.task.title }}</span>
                             {% if task.rank %}
-                              <span class="badge bg-primary">{% trans "Rang" %} {{ task.rank }}</span>
+                              <span class="badge bg-primary">{% trans "Rank" %} {{ task.rank }}</span>
                             {% endif %}
                           </div>
                           {% if task.task.description %}
@@ -222,7 +222,7 @@
                   </div>
                 {% else %}
                   <div class="alert alert-light border-start border-3 border-warning mt-auto mb-0" role="alert">
-                    {% trans "Dieses Kriterium ist derzeit keiner Aufgabe zugeordnet." %}
+                    {% trans "This criterion is currently not assigned to any task." %}
                   </div>
                 {% endif %}
               </div>
@@ -245,9 +245,9 @@
                   </div>
                   <div>
                     {% if item.task.active %}
-                      <span class="badge bg-success">{% trans "aktiv" %}</span>
+                      <span class="badge bg-success">{% trans "Active" %}</span>
                     {% else %}
-                      <span class="badge bg-secondary">{% trans "inaktiv" %}</span>
+                      <span class="badge bg-secondary">{% trans "Inactive" %}</span>
                     {% endif %}
                   </div>
                 </div>
@@ -258,7 +258,7 @@
                 </div>
 
                 <div class="mb-3">
-                  <div class="fw-semibold small mb-2">{% trans "Verknüpfte Kriterien" %}</div>
+                  <div class="fw-semibold small mb-2">{% trans "Linked criteria" %}</div>
                   {% if item.criteria %}
                     <ul class="list-unstyled mb-0 small">
                       {% for entry in item.criteria %}
@@ -266,13 +266,13 @@
                           <div class="d-flex flex-wrap gap-2 align-items-center">
                             <span class="fw-semibold">{{ entry.criterion.title }}</span>
                             {% if entry.rank %}
-                              <span class="badge bg-primary">{% trans "Rang" %} {{ entry.rank }}</span>
+                              <span class="badge bg-primary">{% trans "Rank" %} {{ entry.rank }}</span>
                             {% endif %}
                             <span class="badge bg-light text-dark">
                               {{ entry.llm.provider.name }} — {{ entry.llm.name }}
                             </span>
                             {% if entry.criterion.active == False %}
-                              <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                              <span class="badge bg-warning">{% trans "Inactive" %}</span>
                             {% endif %}
                             {% if entry.criterion.tag %}
                               <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
@@ -283,14 +283,14 @@
                     </ul>
                   {% else %}
                     <div class="alert alert-secondary mb-0" role="alert">
-                      {% trans "Für diese Aufgabe sind derzeit keine Kriterien verknüpft." %}
+                      {% trans "No criteria are currently linked to this task." %}
                     </div>
                   {% endif %}
                 </div>
 
                 {% if item.llm_list %}
                   <div class="mt-auto">
-                    <div class="fw-semibold small mb-2">{% trans "Eingesetzte Sprachmodelle" %}</div>
+                    <div class="fw-semibold small mb-2">{% trans "Language models in use" %}</div>
                     <div class="d-flex flex-wrap gap-2 small">
                       {% for llm in item.llm_list %}
                         <span class="badge bg-light text-dark">
@@ -329,12 +329,12 @@
                     </div>
                     <div class="text-muted small d-flex gap-2 align-items-center">
                       <span class="badge bg-light text-dark">
-                        {{ item.task_count }} {% blocktrans count item.task_count as task_count %}
-                        Aufgabe{% plural %}Aufgaben{% endblocktrans %}
+                        {{ item.task_count }} {% blocktrans count item.task_count as task_count context "assignment explorer|task count label" %}
+                        Task{% plural %}Tasks{% endblocktrans %}
                       </span>
                       <span class="badge bg-light text-dark">
-                        {{ item.criteria_count }} {% blocktrans count item.criteria_count as criteria_count %}
-                        Kriterium{% plural %}Kriterien{% endblocktrans %}
+                        {{ item.criteria_count }} {% blocktrans count item.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                        Criterion{% plural %}Criteria{% endblocktrans %}
                       </span>
                     </div>
                   </div>
@@ -347,7 +347,7 @@
                 <div class="accordion-body">
                   {% if item.llm_list %}
                     <div class="mb-3">
-                      <div class="fw-semibold small mb-2">{% trans "Eingesetzte Sprachmodelle" %}</div>
+                      <div class="fw-semibold small mb-2">{% trans "Language models in use" %}</div>
                       <div class="d-flex flex-wrap gap-2 small">
                         {% for llm in item.llm_list %}
                           <span class="badge bg-light text-dark">
@@ -373,9 +373,9 @@
                             </div>
                             <div>
                               {% if task_entry.task.active %}
-                                <span class="badge bg-success">{% trans "aktiv" %}</span>
+                                <span class="badge bg-success">{% trans "Active" %}</span>
                               {% else %}
-                                <span class="badge bg-secondary">{% trans "inaktiv" %}</span>
+                                <span class="badge bg-secondary">{% trans "Inactive" %}</span>
                               {% endif %}
                             </div>
                           </div>
@@ -385,7 +385,7 @@
                                 <li class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                   {% if entry.rank %}
                                     <span class="badge bg-primary fw-semibold">
-                                      {% trans "Rang" %} {{ entry.rank }}
+                                      {% trans "Rank" %} {{ entry.rank }}
                                     </span>
                                   {% endif %}
                                   <span class="fw-semibold">{{ entry.criterion.title }}</span>
@@ -393,7 +393,7 @@
                                     {{ entry.llm.provider.name }} — {{ entry.llm.name }}
                                   </span>
                                   {% if entry.criterion.active == False %}
-                                    <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                                    <span class="badge bg-warning">{% trans "Inactive" %}</span>
                                   {% endif %}
                                   {% if entry.criterion.tag %}
                                     <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
@@ -410,7 +410,7 @@
                   {% if item.unassigned %}
                     <div class="alert alert-light border-start border-3 border-warning mt-3 mb-0" role="alert">
                       <div class="fw-semibold mb-2">
-                        {% trans "Kriterien ohne Aufgabe" %}
+                        {% trans "Criteria without task" %}
                       </div>
                       <ul class="mb-0 ps-3">
                         {% for entry in item.unassigned %}
@@ -422,7 +422,7 @@
                               </span>
                             {% endif %}
                             {% if entry.criterion.active == False %}
-                              <span class="badge bg-warning">{% trans "inaktiv" %}</span>
+                              <span class="badge bg-warning">{% trans "Inactive" %}</span>
                             {% endif %}
                             {% if entry.criterion.tag %}
                               <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>

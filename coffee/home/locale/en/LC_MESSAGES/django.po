@@ -82,6 +82,10 @@ msgstr ""
 #: home/templates/pages/crud_feedback.html:16
 #: home/templates/pages/crud_feedback.html:67
 #: home/templates/pages/crud_task.html:9
+#: home/templates/pages/course_metrics.html:169
+#: home/templates/pages/course_metrics.html:316
+#: home/templates/pages/course_metrics.html:368
+#: home/templates/pages/course_metrics.html:420
 msgid "Task"
 msgstr ""
 
@@ -96,9 +100,9 @@ msgstr ""
 msgid "Feedbacks"
 msgstr ""
 
-#: home/templates/includes/sidebar.html:71
+#: home/templates/includes/sidebar.html:81
 #: home/templates/pages/llm_model_assignments.html:8
-msgid "Zuordnungs-Explorer"
+msgid "Assignment Explorer"
 msgstr "Assignment Explorer"
 
 #: home/templates/includes/sidebar.html:74
@@ -167,81 +171,180 @@ msgid "Feedback Data"
 msgstr ""
 
 #: home/templates/pages/llm_model_assignments.html:10
-msgid "Erkunden Sie die Zuordnungen zwischen Kriterien, Aufgaben, Kursen und Sprachmodellen."
+msgid "Explore the assignments between criteria, tasks, courses, and language models."
 msgstr "Explore the assignments between criteria, tasks, courses, and language models."
 
 #: home/templates/pages/llm_model_assignments.html:14
-msgid "Einstiegsebene"
+msgid "Starting level"
 msgstr "Starting level"
 
 #: home/templates/pages/llm_model_assignments.html:28
-msgid "Für Ihre Nutzergruppe sind derzeit keine Kurse freigeschaltet."
+msgid "No courses are currently available for your user group."
 msgstr "No courses are currently available for your user group."
 
 #: home/templates/pages/llm_model_assignments.html:32
-msgid "Es liegen noch keine Zuordnungen von Kriterien zu Sprachmodellen vor."
+msgid "No assignments between criteria and language models exist yet."
 msgstr "No assignments between criteria and language models exist yet."
 
-#: home/templates/pages/llm_model_assignments.html:59
+#: home/templates/pages/llm_model_assignments.html:58 home/templates/pages/llm_model_assignments.html:318
 #, python-format
-msgid "Kurs"
-msgid_plural "Kurse"
+msgctxt "assignment explorer|course count label"
+msgid "Course"
+msgid_plural "Courses"
 msgstr[0] "Course"
 msgstr[1] "Courses"
 
-#: home/templates/pages/llm_model_assignments.html:63 home/templates/pages/llm_model_assignments.html:95 home/templates/pages/llm_model_assignments.html:337
+#: home/templates/pages/llm_model_assignments.html:62 home/templates/pages/llm_model_assignments.html:94 home/templates/pages/llm_model_assignments.html:322 home/templates/pages/llm_model_assignments.html:336
 #, python-format
-msgid "Kriterium"
-msgid_plural "Kriterien"
+msgctxt "assignment explorer|criterion count label"
+msgid "Criterion"
+msgid_plural "Criteria"
 msgstr[0] "Criterion"
 msgstr[1] "Criteria"
 
-#: home/templates/pages/llm_model_assignments.html:91 home/templates/pages/llm_model_assignments.html:333
+#: home/templates/pages/llm_model_assignments.html:90 home/templates/pages/llm_model_assignments.html:332
 #, python-format
-msgid "Aufgabe"
-msgid_plural "Aufgaben"
+msgctxt "assignment explorer|task count label"
+msgid "Task"
+msgid_plural "Tasks"
 msgstr[0] "Task"
 msgstr[1] "Tasks"
 
-#: home/templates/pages/llm_model_assignments.html:117 home/templates/pages/llm_model_assignments.html:248 home/templates/pages/llm_model_assignments.html:376
-msgid "aktiv"
-msgstr "active"
-
 #: home/templates/pages/llm_model_assignments.html:119 home/templates/pages/llm_model_assignments.html:133 home/templates/pages/llm_model_assignments.html:160 home/templates/pages/llm_model_assignments.html:199 home/templates/pages/llm_model_assignments.html:250 home/templates/pages/llm_model_assignments.html:269 home/templates/pages/llm_model_assignments.html:275 home/templates/pages/llm_model_assignments.html:378 home/templates/pages/llm_model_assignments.html:396 home/templates/pages/llm_model_assignments.html:425
-msgid "inaktiv"
-msgstr "inactive"
+msgid "Inactive"
+msgstr "Inactive"
 
 #: home/templates/pages/llm_model_assignments.html:128 home/templates/pages/llm_model_assignments.html:213 home/templates/pages/llm_model_assignments.html:269 home/templates/pages/llm_model_assignments.html:388
-msgid "Rang"
+msgid "Rank"
 msgstr "Rank"
 
 #: home/templates/pages/llm_model_assignments.html:146
-msgid "Für diesen Kurs sind derzeit keine Aufgaben mit diesem Sprachmodell verknüpft."
+msgid "No tasks are currently linked to this language model for this course."
 msgstr "No tasks are currently linked to this language model for this course."
 
 #: home/templates/pages/llm_model_assignments.html:153 home/templates/pages/llm_model_assignments.html:413
-msgid "Kriterien ohne Aufgabe"
+msgid "Criteria without task"
 msgstr "Criteria without task"
 
 #: home/templates/pages/llm_model_assignments.html:206
-msgid "Verknüpfte Aufgaben"
+msgid "Linked tasks"
 msgstr "Linked tasks"
 
 #: home/templates/pages/llm_model_assignments.html:225
-msgid "Dieses Kriterium ist derzeit keiner Aufgabe zugeordnet."
+msgid "This criterion is currently not assigned to any task."
 msgstr "This criterion is currently not assigned to any task."
 
 #: home/templates/pages/llm_model_assignments.html:261
-msgid "Verknüpfte Kriterien"
+msgid "Linked criteria"
 msgstr "Linked criteria"
 
 #: home/templates/pages/llm_model_assignments.html:286
-msgid "Für diese Aufgabe sind derzeit keine Kriterien verknüpft."
+msgid "No criteria are currently linked to this task."
 msgstr "No criteria are currently linked to this task."
 
 #: home/templates/pages/llm_model_assignments.html:293 home/templates/pages/llm_model_assignments.html:350
-msgid "Eingesetzte Sprachmodelle"
+msgid "Language models in use"
 msgstr "Language models in use"
+
+#: home/templates/pages/course_metrics.html:7
+msgid "Course Metrics"
+msgstr "Course Metrics"
+
+#: home/templates/pages/course_metrics.html:14
+msgid "Select course"
+msgstr "Select course"
+
+#: home/templates/pages/course_metrics.html:27
+msgid "Start"
+msgstr "Start"
+
+#: home/templates/pages/course_metrics.html:36
+msgid "End"
+msgstr "End"
+
+#: home/templates/pages/course_metrics.html:50
+msgid "Sessions (total)"
+msgstr "Sessions (total)"
+
+#: home/templates/pages/course_metrics.html:58
+msgid "Tokens (total)"
+msgstr "Tokens (total)"
+
+#: home/templates/pages/course_metrics.html:66 home/templates/pages/course_metrics.html:351
+msgid "Avg helpfulness"
+msgstr "Avg helpfulness"
+
+#: home/templates/pages/course_metrics.html:78
+msgid "Avg duration (s)"
+msgstr "Avg duration (s)"
+
+#: home/templates/pages/course_metrics.html:93
+msgid "Time range"
+msgstr "Time range"
+
+#: home/templates/pages/course_metrics.html:95
+msgid "per day"
+msgstr "per day"
+
+#: home/templates/pages/course_metrics.html:96
+msgid "per week"
+msgstr "per week"
+
+#: home/templates/pages/course_metrics.html:97
+msgid "per month"
+msgstr "per month"
+
+#: home/templates/pages/course_metrics.html:103 home/templates/pages/course_metrics.html:237 home/templates/pages/course_metrics.html:252 home/templates/pages/course_metrics.html:403 home/templates/pages/course_metrics.html:417
+msgid "Views"
+msgstr "Views"
+
+#: home/templates/pages/course_metrics.html:115 home/templates/pages/course_metrics.html:299
+msgid "Avg tokens per task"
+msgstr "Avg tokens per task"
+
+#: home/templates/pages/course_metrics.html:120 home/templates/pages/course_metrics.html:136 home/templates/pages/course_metrics.html:152 home/templates/pages/course_metrics.html:191
+msgid "No data."
+msgstr "No data."
+
+#: home/templates/pages/course_metrics.html:131
+msgid "Avg helpfulness per task"
+msgstr "Avg helpfulness per task"
+
+#: home/templates/pages/course_metrics.html:147 home/templates/pages/course_metrics.html:403
+msgid "Views per task"
+msgstr "Views per task"
+
+#: home/templates/pages/course_metrics.html:163
+msgid "Helpfulness coverage per task"
+msgstr "Helpfulness coverage per task"
+
+#: home/templates/pages/course_metrics.html:170
+msgid "With score (%)"
+msgstr "With score (%)"
+
+#: home/templates/pages/course_metrics.html:171
+msgid "Without score (%)"
+msgstr "Without score (%)"
+
+#: home/templates/pages/course_metrics.html:172
+msgid "With score"
+msgstr "With score"
+
+#: home/templates/pages/course_metrics.html:173
+msgid "Without score"
+msgstr "Without score"
+
+#: home/templates/pages/course_metrics.html:174
+msgid "Total"
+msgstr "Total"
+
+#: home/templates/pages/course_metrics.html:251
+msgid "Days"
+msgstr "Days"
+
+#: home/templates/pages/course_metrics.html:313
+msgid "Tokens"
+msgstr "Tokens"
 
 #: home/templates/pages/crud_course.html:9
 msgid "Courses"
@@ -293,6 +396,9 @@ msgstr ""
 #: home/templates/pages/crud_feedback.html:91
 #: home/templates/pages/crud_task.html:17
 #: home/templates/pages/crud_task.html:71
+#: home/templates/pages/llm_model_assignments.html:117
+#: home/templates/pages/llm_model_assignments.html:248
+#: home/templates/pages/llm_model_assignments.html:376
 msgid "Active"
 msgstr ""
 
