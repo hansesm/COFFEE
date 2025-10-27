@@ -112,7 +112,7 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Avg tokens per task" %}</h5>
+        <h5 class="mb-3">{% trans "Avg tokens per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="avg_tokens_task_chart"></canvas>
         </div>
@@ -128,7 +128,7 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Avg helpfulness per task" %}</h5>
+        <h5 class="mb-3">{% trans "Avg helpfulness per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="avg_help_task_chart"></canvas>
         </div>
@@ -144,7 +144,7 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Views per task" %}</h5>
+        <h5 class="mb-3">{% trans "Views per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="calls_per_task_chart"></canvas>
         </div>
@@ -343,8 +343,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.avg_tokens);
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.avg_tokens);
 
     // Destroy previous chart if any
     if (window.avgTokensTaskChart) {
@@ -358,7 +362,7 @@
       data: {
         labels,
         datasets: [{
-          label: '{% trans "Avg tokens per task" %}',
+          label: '{% trans "Avg tokens per feedback" %}',
           data: values,
           borderWidth: 1
         }]
@@ -375,7 +379,7 @@
             title: { display: true, text: '{% trans "Tokens" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Task" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }
@@ -396,8 +400,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.avg_helpfulness); // can be null
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.avg_helpfulness); // can be null
 
     if (window.avgHelpTaskChart) {
       window.avgHelpTaskChart.destroy();
@@ -427,7 +435,7 @@
             title: { display: true, text: '{% trans "Helpfulness" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Task" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }
@@ -448,8 +456,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.count);
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.count);
 
     if (window.callsPerTaskChart) {
       window.callsPerTaskChart.destroy();
@@ -479,7 +491,7 @@
             title: { display: true, text: '{% trans "Views" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Task" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }

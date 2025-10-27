@@ -308,20 +308,20 @@ msgid "Views"
 msgstr "Aufrufe"
 
 #: home/templates/pages/course_metrics.html:115 home/templates/pages/course_metrics.html:299
-msgid "Avg tokens per task"
-msgstr "Ø Tokens pro Aufgabe"
+msgid "Avg tokens per feedback"
+msgstr "Ø Tokens pro Feedback"
 
 #: home/templates/pages/course_metrics.html:120 home/templates/pages/course_metrics.html:136 home/templates/pages/course_metrics.html:152 home/templates/pages/course_metrics.html:191
 msgid "No data."
 msgstr "Keine Daten."
 
 #: home/templates/pages/course_metrics.html:131
-msgid "Avg helpfulness per task"
-msgstr "Ø Helpfulness pro Aufgabe"
+msgid "Avg helpfulness per feedback"
+msgstr "Ø Helpfulness pro Feedback"
 
 #: home/templates/pages/course_metrics.html:147 home/templates/pages/course_metrics.html:403
-msgid "Views per task"
-msgstr "Aufrufe pro Aufgabe"
+msgid "Views per feedback"
+msgstr "Aufrufe pro Feedback"
 
 #: home/templates/pages/course_metrics.html:163
 msgid "Helpfulness coverage per task"
