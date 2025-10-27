@@ -802,7 +802,7 @@ class LLMModelAssignmentsViewTest(TestCase):
 
         response = self.client.get(reverse("llm_assignments"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "pages/llm_model_assignments.html")
+        self.assertTemplateUsed(response, "pages/assignment_explorer.html")
 
         self.assertEqual(response.context["pivot"], "llm")
 

@@ -9,19 +9,19 @@ from django.views import View
 from coffee.home.models import Course, Criteria, FeedbackCriteria
 
 
-class LLMModelAssignmentsView(LoginRequiredMixin, View):
+class AssignmentExplorerView(LoginRequiredMixin, View):
     """
-    Zeigt für Lehrende eine hierarchische Übersicht,
-    welche Kriterien (und damit Aufgaben/Kurse) einem Sprachmodell zugeordnet sind.
+    Displays a hierarchical overview for instructors that shows which criteria
+    (and therefore tasks/courses) are assigned to each language model.
     """
 
-    template_name = "pages/llm_model_assignments.html"
-    DEFAULT_PIVOT = "llm"
+    template_name = "pages/assignment_explorer.html"
+    DEFAULT_PIVOT = "course"
     PIVOT_CHOICES = (
-        ("llm", _("Sprachmodell")),
-        ("criteria", _("Kriterium")),
-        ("task", _("Aufgabe")),
-        ("course", _("Kurs")),
+        ("course", _("Course")),
+        ("task", _("feedback")),
+        ("criteria", _("Criterion")),
+        ("llm", _("Language Model")),
     )
 
     def _get_visible_courses(self, user):

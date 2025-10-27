@@ -100,8 +100,12 @@ msgstr "Kriterien"
 msgid "Feedbacks"
 msgstr "Feedbacks"
 
+#: home/templates/pages/crud_feedback.html:9
+msgid "feedback"
+msgstr "Feedback"
+
 #: home/templates/includes/sidebar.html:81
-#: home/templates/pages/llm_model_assignments.html:8
+#: home/templates/pages/assignment_explorer.html:8
 msgid "Assignment Explorer"
 msgstr "Zuordnungs-Explorer"
 
@@ -175,23 +179,23 @@ msgstr "Lösung"
 msgid "Feedback Data"
 msgstr "Feedback Details"
 
-#: home/templates/pages/llm_model_assignments.html:10
+#: home/templates/pages/assignment_explorer.html:10
 msgid "Explore the assignments between criteria, tasks, courses, and language models."
-msgstr "Erkunden Sie die Zuordnungen zwischen Kriterien, Aufgaben, Kursen und Sprachmodellen."
+msgstr "Erkunden Sie die Zuordnungen zwischen Kursen, Feedbacks, Kriterien, und Sprachmodellen."
 
-#: home/templates/pages/llm_model_assignments.html:14
+#: home/templates/pages/assignment_explorer.html:14
 msgid "Starting level"
 msgstr "Einstiegsebene"
 
-#: home/templates/pages/llm_model_assignments.html:28
+#: home/templates/pages/assignment_explorer.html:28
 msgid "No courses are currently available for your user group."
 msgstr "Für Ihre Nutzergruppe sind derzeit keine Kurse freigeschaltet."
 
-#: home/templates/pages/llm_model_assignments.html:32
+#: home/templates/pages/assignment_explorer.html:32
 msgid "No assignments between criteria and language models exist yet."
 msgstr "Es liegen noch keine Zuordnungen von Kriterien zu Sprachmodellen vor."
 
-#: home/templates/pages/llm_model_assignments.html:58 home/templates/pages/llm_model_assignments.html:318
+#: home/templates/pages/assignment_explorer.html:58 home/templates/pages/assignment_explorer.html:318
 #, python-format
 msgctxt "assignment explorer|course count label"
 msgid "Course"
@@ -199,7 +203,7 @@ msgid_plural "Courses"
 msgstr[0] "Kurs"
 msgstr[1] "Kurse"
 
-#: home/templates/pages/llm_model_assignments.html:62 home/templates/pages/llm_model_assignments.html:95 home/templates/pages/llm_model_assignments.html:322 home/templates/pages/llm_model_assignments.html:337
+#: home/templates/pages/assignment_explorer.html:62 home/templates/pages/assignment_explorer.html:95 home/templates/pages/assignment_explorer.html:322 home/templates/pages/assignment_explorer.html:337
 #, python-format
 msgctxt "assignment explorer|criterion count label"
 msgid "Criterion"
@@ -207,7 +211,7 @@ msgid_plural "Criteria"
 msgstr[0] "Kriterium"
 msgstr[1] "Kriterien"
 
-#: home/templates/pages/llm_model_assignments.html:90 home/templates/pages/llm_model_assignments.html:333
+#: home/templates/pages/assignment_explorer.html:90 home/templates/pages/assignment_explorer.html:333
 #, python-format
 msgctxt "assignment explorer|task count label"
 msgid "Task"
@@ -215,39 +219,39 @@ msgid_plural "Tasks"
 msgstr[0] "Aufgabe"
 msgstr[1] "Aufgaben"
 
-#: home/templates/pages/llm_model_assignments.html:119 home/templates/pages/llm_model_assignments.html:133 home/templates/pages/llm_model_assignments.html:160 home/templates/pages/llm_model_assignments.html:199 home/templates/pages/llm_model_assignments.html:250 home/templates/pages/llm_model_assignments.html:269 home/templates/pages/llm_model_assignments.html:275 home/templates/pages/llm_model_assignments.html:378 home/templates/pages/llm_model_assignments.html:396 home/templates/pages/llm_model_assignments.html:425
+#: home/templates/pages/assignment_explorer.html:119 home/templates/pages/assignment_explorer.html:133 home/templates/pages/assignment_explorer.html:160 home/templates/pages/assignment_explorer.html:199 home/templates/pages/assignment_explorer.html:250 home/templates/pages/assignment_explorer.html:269 home/templates/pages/assignment_explorer.html:275 home/templates/pages/assignment_explorer.html:378 home/templates/pages/assignment_explorer.html:396 home/templates/pages/assignment_explorer.html:425
 msgid "Inactive"
 msgstr "inaktiv"
 
-#: home/templates/pages/llm_model_assignments.html:128 home/templates/pages/llm_model_assignments.html:213 home/templates/pages/llm_model_assignments.html:269 home/templates/pages/llm_model_assignments.html:388
+#: home/templates/pages/assignment_explorer.html:128 home/templates/pages/assignment_explorer.html:213 home/templates/pages/assignment_explorer.html:269 home/templates/pages/assignment_explorer.html:388
 msgid "Rank"
 msgstr "Rang"
 
-#: home/templates/pages/llm_model_assignments.html:146
+#: home/templates/pages/assignment_explorer.html:146
 msgid "No tasks are currently linked to this language model for this course."
 msgstr "Für diesen Kurs sind derzeit keine Aufgaben mit diesem Sprachmodell verknüpft."
 
-#: home/templates/pages/llm_model_assignments.html:153 home/templates/pages/llm_model_assignments.html:413
+#: home/templates/pages/assignment_explorer.html:153 home/templates/pages/assignment_explorer.html:413
 msgid "Criteria without task"
 msgstr "Kriterien ohne Aufgabe"
 
-#: home/templates/pages/llm_model_assignments.html:206
+#: home/templates/pages/assignment_explorer.html:206
 msgid "Linked tasks"
-msgstr "Verknüpfte Aufgaben"
+msgstr "Verknüpfte Feedbacks"
 
-#: home/templates/pages/llm_model_assignments.html:225
+#: home/templates/pages/assignment_explorer.html:225
 msgid "This criterion is currently not assigned to any task."
 msgstr "Dieses Kriterium ist derzeit keiner Aufgabe zugeordnet."
 
-#: home/templates/pages/llm_model_assignments.html:261
+#: home/templates/pages/assignment_explorer.html:261
 msgid "Linked criteria"
 msgstr "Verknüpfte Kriterien"
 
-#: home/templates/pages/llm_model_assignments.html:286
+#: home/templates/pages/assignment_explorer.html:286
 msgid "No criteria are currently linked to this task."
 msgstr "Für diese Aufgabe sind derzeit keine Kriterien verknüpft."
 
-#: home/templates/pages/llm_model_assignments.html:293 home/templates/pages/llm_model_assignments.html:350
+#: home/templates/pages/assignment_explorer.html:293 home/templates/pages/assignment_explorer.html:350
 msgid "Language models in use"
 msgstr "Eingesetzte Sprachmodelle"
 
@@ -401,9 +405,9 @@ msgstr "Kursnummer"
 #: home/templates/pages/crud_feedback.html:91
 #: home/templates/pages/crud_task.html:17
 #: home/templates/pages/crud_task.html:71
-#: home/templates/pages/llm_model_assignments.html:117
-#: home/templates/pages/llm_model_assignments.html:248
-#: home/templates/pages/llm_model_assignments.html:376
+#: home/templates/pages/assignment_explorer.html:117
+#: home/templates/pages/assignment_explorer.html:248
+#: home/templates/pages/assignment_explorer.html:376
 msgid "Active"
 msgstr "Aktiv"
 
