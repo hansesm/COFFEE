@@ -40,6 +40,35 @@ AI-powered feedback system for educational institutions using Django and Large L
    uv run task server
    ```
 
+### Optional: Local Ollama Setup for Development
+
+1. **Install Ollama**
+   - Follow the official instructions at [ollama.com/download](https://ollama.com/download) for your platform.
+
+2. **Start the Ollama service**
+   - After installation the daemon normally starts automatically. You can verify with:
+     ```bash
+     ollama serve
+     ```
+     (Press `Ctrl+C` to stop if it is already running in the background.)
+
+3. **Download a model**
+   ```bash
+   ollama pull phi4
+   ```
+
+4. **Test the model locally**
+   ```bash
+   ollama run phi4
+   ```
+   The default API endpoint is available at `http://localhost:11434`.
+
+5. **Register Ollama in Django Admin**
+   - Sign in at `<BASE_URL>/admin`.
+   - Go to **LLM Providers** → **Add**, pick **Ollama**, set the host (e.g. `http://localhost:11434`), and save.
+   - Go to **LLM Models** → **Add**, select the newly created Ollama provider, enter the model name (e.g. `phi4`), choose a display name, and save.
+   - The provider and model can now be assigned to tasks and criteria inside the app.
+
 ### Optional: Populate Database with Demo Data
 
 ```bash
