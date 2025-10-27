@@ -273,7 +273,7 @@ msgstr "Ende"
 
 #: home/templates/pages/course_metrics.html:50
 msgid "Sessions (total)"
-msgstr "Sessions (gesamt)"
+msgstr "Feedbacks (gesamt)"
 
 #: home/templates/pages/course_metrics.html:58
 msgid "Tokens (total)"
@@ -281,11 +281,11 @@ msgstr "Tokens (gesamt)"
 
 #: home/templates/pages/course_metrics.html:66 home/templates/pages/course_metrics.html:351
 msgid "Avg helpfulness"
-msgstr "Ø Helpfulness"
+msgstr "Ø Helpfulness (Kurs)"
 
 #: home/templates/pages/course_metrics.html:78
 msgid "Avg duration (s)"
-msgstr "Ø Dauer (s)"
+msgstr "Ø Feedback-Generierungszeit (s)"
 
 #: home/templates/pages/course_metrics.html:93
 msgid "Time range"
