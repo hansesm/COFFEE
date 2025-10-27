@@ -228,13 +228,64 @@
 
       const raw = JSON.parse(dataEl.textContent || '[]');
       const points = raw.map(r => ({ x: r.bucket, y: r.count }));
-      const bucketUnit = "{{ bucket }}" === "week" ? "week" : "day";
+      const currentBucket = "{{ bucket }}";
+      const locale =
+        document.documentElement?.lang
+        || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+
+      const bucketUnit = currentBucket === "week" ? "week" : currentBucket === "month" ? "month" : "day";
+      const xScaleOptions = {
+        type: 'time',
+        time: {
+          unit: bucketUnit,
+          displayFormats: {
+            day: 'dd.MM',
+            week: 'dd.MM',
+            month: 'MMMM'
+          }
+        },
+        ticks: {
+          source: 'data'
+        },
+        title: { display: false }
+      };
+
+      if (currentBucket === "month") {
+        xScaleOptions.ticks.callback = function(value) {
+          let timestamp = typeof value === 'number' ? value : Date.parse(value);
+          if (Number.isNaN(timestamp) && typeof this?.getLabelForValue === 'function') {
+            const resolved = this.getLabelForValue(value);
+            timestamp = Date.parse(resolved);
+            if (Number.isNaN(timestamp)) {
+              return resolved;
+            }
+          }
+          if (Number.isNaN(timestamp)) {
+            return value;
+          }
+          return new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(timestamp));
+        };
+      }
+
+      const formatTooltipTitle = (timestamp) => {
+        if (!timestamp || Number.isNaN(timestamp)) {
+          return "";
+        }
+        const date = new Date(timestamp);
+        if (currentBucket === "month") {
+          return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date);
+        }
+        if (currentBucket === "week") {
+          return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+        }
+        return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+      };
 
       window.callsChart = new Chart(ctx, {
         type: 'line',
         data: {
           datasets: [{
-        label: '{% trans "Views" %}',
+            label: '{% trans "Views" %}',
             data: points,
             borderWidth: 2,
             pointRadius: 2,
@@ -248,10 +299,21 @@
           animation: false,            // kein Flackern
           interaction: { mode: 'index', intersect: false },
           scales: {
-            x: { type: 'time', time: { unit: bucketUnit }, title: { display: true, text: '{% trans "Days" %}' } },
+            x: xScaleOptions,
             y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: '{% trans "Views" %}' } }
           },
-          plugins: { legend: { display: false } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  if (!items || !items.length) return "";
+                  const ts = items[0].parsed?.x;
+                  return formatTooltipTitle(ts);
+                }
+              }
+            }
+          }
         }
       });
 
