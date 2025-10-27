@@ -796,7 +796,7 @@ class LLMModelAssignmentsViewTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response.url)
 
-    def test_llm_pivot_for_accessible_courses(self):
+    def test_default_course_pivot_for_accessible_courses(self):
         logged_in = self.client.login(username="lecturer", password="pass1234")
         self.assertTrue(logged_in)
 
@@ -804,26 +804,15 @@ class LLMModelAssignmentsViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "pages/assignment_explorer.html")
 
-        self.assertEqual(response.context["pivot"], "llm")
+        self.assertEqual(response.context["pivot"], "course")
 
         hierarchy = response.context["hierarchy"]
         self.assertEqual(len(hierarchy), 1)
         self.assertEqual(response.context["hierarchy_count"], 1)
 
-        llm_block = hierarchy[0]
-        self.assertEqual(llm_block["llm"], self.llm)
-        self.assertEqual(llm_block["course_count"], 1)
-
-        course_block = llm_block["courses"][0]
-        self.assertEqual(course_block["course"], self.course)
-        self.assertEqual(course_block["task_count"], 1)
-
-        task_block = course_block["tasks"][0]
-        self.assertEqual(task_block["task"], self.task)
-
-        criterion_titles = [entry["criterion"].title for entry in task_block["criteria"]]
-        self.assertIn(self.criteria_assigned.title, criterion_titles)
-        self.assertIn(self.criteria_unassigned, course_block["unassigned"])
+        course_response = self.client.get(reverse("llm_assignments"), {"pivot": "course"})
+        self.assertEqual(course_response.status_code, 200)
+        self.assertEqual(course_response.context["hierarchy"], hierarchy)
 
     def test_criteria_pivot_structure(self):
         self.client.login(username="lecturer", password="pass1234")
@@ -854,7 +843,7 @@ class LLMModelAssignmentsViewTest(TestCase):
 
         response = self.client.get(reverse("llm_assignments"), {"pivot": "invalid"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["pivot"], "llm")
+        self.assertEqual(response.context["pivot"], "course")
 
     def test_task_pivot_structure(self):
         self.client.login(username="lecturer", password="pass1234")
@@ -907,3 +896,28 @@ class LLMModelAssignmentsViewTest(TestCase):
         self.assertEqual(len(unassigned_entries), 1)
         self.assertEqual(unassigned_entries[0]["criterion"], self.criteria_unassigned)
         self.assertEqual(unassigned_entries[0]["llm"], self.llm)
+
+    def test_llm_pivot_structure(self):
+        self.client.login(username="lecturer", password="pass1234")
+
+        response = self.client.get(reverse("llm_assignments"), {"pivot": "llm"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["pivot"], "llm")
+
+        hierarchy = response.context["hierarchy"]
+        self.assertEqual(len(hierarchy), 1)
+
+        llm_block = hierarchy[0]
+        self.assertEqual(llm_block["llm"], self.llm)
+        self.assertEqual(llm_block["course_count"], 1)
+
+        course_block = llm_block["courses"][0]
+        self.assertEqual(course_block["course"], self.course)
+        self.assertEqual(course_block["task_count"], 1)
+
+        task_block = course_block["tasks"][0]
+        self.assertEqual(task_block["task"], self.task)
+
+        criterion_titles = [entry["criterion"].title for entry in task_block["criteria"]]
+        self.assertIn(self.criteria_assigned.title, criterion_titles)
+        self.assertIn(self.criteria_unassigned, course_block["unassigned"])
