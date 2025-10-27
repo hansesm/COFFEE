@@ -9,6 +9,7 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from coffee.home.forms import (
     FeedbackSessionForm,
@@ -118,7 +119,9 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
         quoata_exceeded = await sync_to_async(provider.soft_limit_exceeded)(0)
         if quoata_exceeded:
             logger.warning("Quota exceeded")
-            return HttpResponseBadRequest("Quota exceeded. Try again at " + formatted)
+            return HttpResponseBadRequest(
+                _("Token limit exceeded. Please try again at %(time)s.") % {"time": formatted}
+            )
 
 
         generator = ai_client.stream(

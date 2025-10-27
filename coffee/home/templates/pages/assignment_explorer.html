@@ -1,0 +1,444 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+    <div>
+      <h2 class="mb-1">{% trans "Assignment Explorer" %}</h2>
+      <p class="text-muted small mb-0">
+        {% trans "Explore the assignments between criteria, tasks, courses, and language models." %}
+      </p>
+    </div>
+    <form method="get" class="d-flex flex-column flex-sm-row gap-2 align-items-sm-end">
+      <label for="pivot-select" class="text-muted small mb-0">{% trans "Starting level" %}</label>
+      <select id="pivot-select"
+              name="pivot"
+              class="form-select form-select-sm"
+              onchange="this.form.submit()">
+        {% for value, label in pivot_choices %}
+          <option value="{{ value }}" {% if value == pivot %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if visible_course_count == 0 %}
+    <div class="alert alert-warning" role="alert">
+      {% trans "No courses are currently available for your user group." %}
+    </div>
+  {% elif not hierarchy %}
+    <div class="alert alert-info" role="alert">
+      {% trans "No assignments between criteria and language models exist yet." %}
+    </div>
+  {% else %}
+    {% if pivot == 'llm' %}
+      <div class="accordion" id="llm-accordion">
+        {% for llm_block in hierarchy %}
+          {% with accordion_id=forloop.counter %}
+            <div class="accordion-item mb-3">
+              <h2 class="accordion-header" id="heading-{{ accordion_id }}">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse-{{ accordion_id }}"
+                        aria-expanded="false"
+                        aria-controls="collapse-{{ accordion_id }}">
+                  <div class="d-flex flex-column flex-md-row flex-md-wrap w-100 gap-2 justify-content-between">
+                    <div class="me-2">
+                      <div class="fw-semibold">
+                        {{ llm_block.llm.provider.name }} — {{ llm_block.llm.name }}
+                      </div>
+                      <div class="text-muted small">
+                        {{ llm_block.llm.external_name }}
+                      </div>
+                    </div>
+                    <div class="text-muted small d-flex gap-3 align-items-center">
+                      <span class="badge bg-light text-dark">
+                        {{ llm_block.course_count }} {% blocktrans count llm_block.course_count as course_count context "assignment explorer|course count label" %}
+                        Course{% plural %}Courses{% endblocktrans %}
+                      </span>
+                      <span class="badge bg-light text-dark">
+                        {{ llm_block.criteria_count }} {% blocktrans count llm_block.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                        Criterion{% plural %}Criteria{% endblocktrans %}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </h2>
+              <div id="collapse-{{ accordion_id }}"
+                   class="accordion-collapse collapse"
+                   aria-labelledby="heading-{{ accordion_id }}"
+                   data-bs-parent="#llm-accordion">
+                <div class="accordion-body">
+                  {% for course_block in llm_block.courses %}
+                    <div class="mb-4 pb-4 {% if not forloop.last %}border-bottom{% endif %}">
+                      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3">
+                        <div>
+                          <h5 class="mb-1">
+                            {{ course_block.course.course_name }}
+                          </h5>
+                          <div class="text-muted small">
+                            {{ course_block.course.faculty }}
+                            {% if course_block.course.term %}
+                              · {{ course_block.course.term }}
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="text-muted small d-flex gap-3 align-items-center">
+                          <span>
+                            {{ course_block.task_count }} {% blocktrans count course_block.task_count as task_count context "assignment explorer|task count label" %}
+                            Task{% plural %}Tasks{% endblocktrans %}
+                          </span>
+                          <span>
+                            {{ course_block.criteria_count }} {% blocktrans count course_block.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                            Criterion{% plural %}Criteria{% endblocktrans %}
+                          </span>
+                        </div>
+                      </div>
+
+                      {% if course_block.tasks %}
+                        <div class="list-group list-group-flush">
+                          {% for task_block in course_block.tasks %}
+                            <div class="list-group-item px-0">
+                              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                <div>
+                                  <div class="fw-semibold">
+                                    {{ task_block.task.title }}
+                                  </div>
+                                  {% if task_block.task.description %}
+                                    <div class="text-muted small text-truncate" style="max-width: 420px;">
+                                      {{ task_block.task.description }}
+                                    </div>
+                                  {% endif %}
+                                </div>
+                                <div>
+                                  {% if task_block.task.active %}
+                                    <span class="badge bg-success">{% trans "Active" %}</span>
+                                  {% else %}
+                                    <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                                  {% endif %}
+                                </div>
+                              </div>
+                              <ul class="list-unstyled ms-0 mt-3 mb-0 small">
+                                {% for entry in task_block.criteria %}
+                                  <li class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    {% if entry.rank %}
+                                      <span class="badge bg-primary fw-semibold">
+                                    {% trans "Rank" %} {{ entry.rank }}
+                                      </span>
+                                    {% endif %}
+                                    <span class="fw-semibold">{{ entry.criterion.title }}</span>
+                                    {% if entry.criterion.active == False %}
+                                      <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                                    {% endif %}
+                                    {% if entry.criterion.tag %}
+                                      <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
+                                    {% endif %}
+                                  </li>
+                                {% endfor %}
+                              </ul>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        <div class="alert alert-secondary mb-0" role="alert">
+                          {% trans "No tasks are currently linked to this language model for this course." %}
+                        </div>
+                      {% endif %}
+
+                      {% if course_block.unassigned %}
+                        <div class="alert alert-light border-start border-3 border-warning mt-3 mb-0" role="alert">
+                          <div class="fw-semibold mb-2">
+                            {% trans "Criteria without task" %}
+                          </div>
+                          <ul class="mb-0 ps-3">
+                            {% for criterion in course_block.unassigned %}
+                              <li class="mb-1">
+                                {{ criterion.title }}
+                                {% if criterion.active == False %}
+                                  <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                                {% endif %}
+                                {% if criterion.tag %}
+                                  <span class="badge bg-light text-dark">{{ criterion.tag }}</span>
+                                {% endif %}
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% elif pivot == 'criteria' %}
+      <div class="row row-cols-1 row-cols-lg-2 g-4">
+        {% for item in hierarchy %}
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-body d-flex flex-column">
+                <div class="mb-2">
+                  <h5 class="mb-1">{{ item.criterion.title }}</h5>
+                  <div class="text-muted small d-flex flex-wrap gap-2 align-items-center">
+                    {% if item.course %}
+                      <span>{{ item.course.course_name }}</span>
+                    {% endif %}
+                    {% if item.llm %}
+                      <span class="badge bg-light text-dark">
+                        {{ item.llm.provider.name }} — {{ item.llm.name }}
+                      </span>
+                    {% endif %}
+                    {% if item.criterion.tag %}
+                      <span class="badge bg-light text-dark">{{ item.criterion.tag }}</span>
+                    {% endif %}
+                    {% if item.criterion.active == False %}
+                      <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                {% if item.tasks %}
+                  <div class="mt-2">
+                    <div class="fw-semibold small mb-2">{% trans "Linked tasks" %}</div>
+                    <ul class="list-unstyled mb-0 small">
+                      {% for task in item.tasks %}
+                        <li class="mb-2">
+                          <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="fw-semibold">{{ task.task.title }}</span>
+                            {% if task.rank %}
+                              <span class="badge bg-primary">{% trans "Rank" %} {{ task.rank }}</span>
+                            {% endif %}
+                          </div>
+                          {% if task.task.description %}
+                            <div class="text-muted">{{ task.task.description }}</div>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% else %}
+                  <div class="alert alert-light border-start border-3 border-warning mt-auto mb-0" role="alert">
+                    {% trans "This criterion is currently not assigned to any task." %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% elif pivot == 'task' %}
+      <div class="row row-cols-1 row-cols-lg-2 g-4">
+        {% for item in hierarchy %}
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                  <div>
+                    <h5 class="mb-1">{{ item.task.title }}</h5>
+                    {% if item.task.description %}
+                      <div class="text-muted small">{{ item.task.description }}</div>
+                    {% endif %}
+                  </div>
+                  <div>
+                    {% if item.task.active %}
+                      <span class="badge bg-success">{% trans "Active" %}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="text-muted small mb-3">
+                  {% if item.course %}
+                    {{ item.course.course_name }}
+                  {% endif %}
+                </div>
+
+                <div class="mb-3">
+                  <div class="fw-semibold small mb-2">{% trans "Linked criteria" %}</div>
+                  {% if item.criteria %}
+                    <ul class="list-unstyled mb-0 small">
+                      {% for entry in item.criteria %}
+                        <li class="mb-2">
+                          <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="fw-semibold">{{ entry.criterion.title }}</span>
+                            {% if entry.rank %}
+                              <span class="badge bg-primary">{% trans "Rank" %} {{ entry.rank }}</span>
+                            {% endif %}
+                            <span class="badge bg-light text-dark">
+                              {{ entry.llm.provider.name }} — {{ entry.llm.name }}
+                            </span>
+                            {% if entry.criterion.active == False %}
+                              <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                            {% endif %}
+                            {% if entry.criterion.tag %}
+                              <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
+                            {% endif %}
+                          </div>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <div class="alert alert-secondary mb-0" role="alert">
+                      {% trans "No criteria are currently linked to this task." %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                {% if item.llm_list %}
+                  <div class="mt-auto">
+                    <div class="fw-semibold small mb-2">{% trans "Language models in use" %}</div>
+                    <div class="d-flex flex-wrap gap-2 small">
+                      {% for llm in item.llm_list %}
+                        <span class="badge bg-light text-dark">
+                          {{ llm.provider.name }} — {{ llm.name }}
+                        </span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% elif pivot == 'course' %}
+      <div class="accordion" id="course-accordion">
+        {% for item in hierarchy %}
+          {% with accordion_id=forloop.counter %}
+            <div class="accordion-item mb-3">
+              <h2 class="accordion-header" id="course-heading-{{ accordion_id }}">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#course-collapse-{{ accordion_id }}"
+                        aria-expanded="false"
+                        aria-controls="course-collapse-{{ accordion_id }}">
+                  <div class="d-flex flex-column flex-md-row flex-md-wrap w-100 gap-2 justify-content-between">
+                    <div class="me-2">
+                      <div class="fw-semibold">{{ item.course.course_name }}</div>
+                      <div class="text-muted small">
+                        {{ item.course.faculty }}
+                        {% if item.course.term %}
+                          · {{ item.course.term }}
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="text-muted small d-flex gap-2 align-items-center">
+                      <span class="badge bg-light text-dark">
+                        {{ item.task_count }} {% blocktrans count item.task_count as task_count context "assignment explorer|task count label" %}
+                        Task{% plural %}Tasks{% endblocktrans %}
+                      </span>
+                      <span class="badge bg-light text-dark">
+                        {{ item.criteria_count }} {% blocktrans count item.criteria_count as criteria_count context "assignment explorer|criterion count label" %}
+                        Criterion{% plural %}Criteria{% endblocktrans %}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </h2>
+              <div id="course-collapse-{{ accordion_id }}"
+                   class="accordion-collapse collapse"
+                   aria-labelledby="course-heading-{{ accordion_id }}"
+                   data-bs-parent="#course-accordion">
+                <div class="accordion-body">
+                  {% if item.llm_list %}
+                    <div class="mb-3">
+                      <div class="fw-semibold small mb-2">{% trans "Language models in use" %}</div>
+                      <div class="d-flex flex-wrap gap-2 small">
+                        {% for llm in item.llm_list %}
+                          <span class="badge bg-light text-dark">
+                            {{ llm.provider.name }} — {{ llm.name }}
+                          </span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+
+                  {% if item.tasks %}
+                    <div class="list-group list-group-flush">
+                      {% for task_entry in item.tasks %}
+                        <div class="list-group-item px-0">
+                          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                              <div class="fw-semibold">{{ task_entry.task.title }}</div>
+                              {% if task_entry.task.description %}
+                                <div class="text-muted small text-truncate" style="max-width: 420px;">
+                                  {{ task_entry.task.description }}
+                                </div>
+                              {% endif %}
+                            </div>
+                            <div>
+                              {% if task_entry.task.active %}
+                                <span class="badge bg-success">{% trans "Active" %}</span>
+                              {% else %}
+                                <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                              {% endif %}
+                            </div>
+                          </div>
+                          {% if task_entry.criteria %}
+                            <ul class="list-unstyled ms-0 mt-3 mb-0 small">
+                              {% for entry in task_entry.criteria %}
+                                <li class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                  {% if entry.rank %}
+                                    <span class="badge bg-primary fw-semibold">
+                                      {% trans "Rank" %} {{ entry.rank }}
+                                    </span>
+                                  {% endif %}
+                                  <span class="fw-semibold">{{ entry.criterion.title }}</span>
+                                  <span class="badge bg-light text-dark">
+                                    {{ entry.llm.provider.name }} — {{ entry.llm.name }}
+                                  </span>
+                                  {% if entry.criterion.active == False %}
+                                    <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                                  {% endif %}
+                                  {% if entry.criterion.tag %}
+                                    <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
+                                  {% endif %}
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          {% endif %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  {% if item.unassigned %}
+                    <div class="alert alert-light border-start border-3 border-warning mt-3 mb-0" role="alert">
+                      <div class="fw-semibold mb-2">
+                        {% trans "Criteria without task" %}
+                      </div>
+                      <ul class="mb-0 ps-3">
+                        {% for entry in item.unassigned %}
+                          <li class="mb-1">
+                            {{ entry.criterion.title }}
+                            {% if entry.llm %}
+                              <span class="badge bg-light text-dark">
+                                {{ entry.llm.provider.name }} — {{ entry.llm.name }}
+                              </span>
+                            {% endif %}
+                            {% if entry.criterion.active == False %}
+                              <span class="badge bg-warning">{% trans "Inactive" %}</span>
+                            {% endif %}
+                            {% if entry.criterion.tag %}
+                              <span class="badge bg-light text-dark">{{ entry.criterion.tag }}</span>
+                            {% endif %}
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock content %}

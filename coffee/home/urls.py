@@ -32,7 +32,7 @@ urlpatterns = [
     path("feedback/<uuid:feedback_session_id>/download/", feedback_pdf_download, name="feedback_pdf_download"),
     path("accounts/login/", UserLoginView.as_view(), name="login"),
     path("accounts/logout/", logout_view, name="logout"),
-    path("models/assignments/", LLMModelAssignmentsView.as_view(), name="llm_assignments"),
+    path("models/assignments/", AssignmentExplorerView.as_view(), name="llm_assignments"),
     path("accounts/register/", register, name="register"),
     path(
         "accounts/password-change/",

@@ -3,15 +3,12 @@
 {% load humanize %}
 {% block content %}
 <div class="container-fluid py-4">
-    <h2 class="mb-3">
-        {% trans "Kurs-Metriken" %}
-        {% if selected_course_name %}<small class="text-muted">— {{ selected_course_name }}</small>{% endif %}
-    </h2>
+    <h2 class="mb-3">{% trans "Course Metrics" %} {% trans "per selected time range" %}</h2>
 
     <!-- Filter -->
     <form id="metrics-filter" method="get" class="row g-3 align-items-end mb-3">
         <div class="col-12 col-md-6">
-            <label for="course_id" class="form-label">{% trans "Kurs auswählen" %}</label>
+            <label for="course_id" class="form-label">{% trans "Select course" %}</label>
             <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
                 {% for c in courses %}
                 {% if c.id|stringformat:"s" == selected_course_id|stringformat:"s" %}
@@ -33,7 +30,7 @@
         </div>
 
         <div class="col-12 col-md-3">
-            <label class="form-label">{% trans "Ende" %}</label>
+            <label class="form-label">{% trans "End" %}</label>
             <input type="datetime-local"
                    class="form-control"
                    name="end"
@@ -47,7 +44,7 @@
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="text-uppercase text-muted small">{% trans "Sessions (gesamt)" %}</div>
+                    <div class="text-uppercase text-muted small">{% trans "Sessions (total)" %}</div>
                     <div class="h3 mb-0">{{ kpi.total_sessions|intcomma:True|default:"–" }}</div>
                 </div>
             </div>
@@ -55,7 +52,7 @@
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="text-uppercase text-muted small">{% trans "Tokens (gesamt)" %}</div>
+                    <div class="text-uppercase text-muted small">{% trans "Tokens (total)" %}</div>
                     <div class="h3 mb-0">{{ kpi.total_tokens|intcomma:True|default:"–" }}</div>
                 </div>
             </div>
@@ -63,7 +60,7 @@
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="text-uppercase text-muted small">{% trans "Ø Helpfulness" %}</div>
+                    <div class="text-uppercase text-muted small">{% trans "Avg helpfulness" %}</div>
                     <div class="h3 mb-0">
                         {% if kpi.avg_helpfulness is not None %}
                         {{ kpi.avg_helpfulness|floatformat:2 }}
@@ -75,7 +72,7 @@
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="text-uppercase text-muted small">{% trans "Ø Dauer (s)" %}</div>
+                    <div class="text-uppercase text-muted small">{% trans "Avg duration (s)" %}</div>
                     <div class="h3 mb-0">
                         {% if kpi.avg_duration_seconds is not None %}
                         {{ kpi.avg_duration_seconds|floatformat:1 }}
@@ -90,17 +87,17 @@
         <div class="card-body">
             <div class="row g-3 align-items-end mb-4">
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                    <label class="form-label">{% trans "Zeitraum" %}</label>
+                    <label class="form-label">{% trans "Time range" %}</label>
                     <select class="form-select" name="bucket" onchange="this.form.submit()" form="metrics-filter">
-                        <option value="day" {% if bucket == 'day' %}selected{% endif %}>{% trans "pro Tag" %}</option>
-                        <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "pro Woche" %}</option>
-                        <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "pro Monat" %}</option>
+                        <option value="day" {% if bucket == 'day' %}selected{% endif %}>{% trans "per day" %}</option>
+                        <option value="week" {% if bucket == 'week' %}selected{% endif %}>{% trans "per week" %}</option>
+                        <option value="month" {% if bucket == 'month' %}selected{% endif %}>{% trans "per month" %}</option>
                     </select>
                 </div>
             </div>
 
             <!-- Tabelle A: Aufrufe pro Zeitraum (Sessions) -->
-            <h5 class="mb-3">{% trans "Aufrufe" %}</h5>
+            <h5 class="mb-3">{% trans "Views" %}</h5>
             <div class="chart-wrap" style="height:220px;">
                 <canvas id="calls_line_chart"></canvas>
             </div>
@@ -112,12 +109,12 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Ø Tokens pro Aufgabe" %}</h5>
+        <h5 class="mb-3">{% trans "Avg tokens per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="avg_tokens_task_chart"></canvas>
         </div>
         {% if not avg_tokens_per_task %}
-          <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+          <div class="text-muted small mt-2">{% trans "No data." %}</div>
         {% endif %}
       </div>
     </div>
@@ -128,12 +125,12 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Ø Helpfulness pro Aufgabe" %}</h5>
+        <h5 class="mb-3">{% trans "Avg helpfulness per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="avg_help_task_chart"></canvas>
         </div>
         {% if not avg_help_per_task %}
-          <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+          <div class="text-muted small mt-2">{% trans "No data." %}</div>
         {% endif %}
       </div>
     </div>
@@ -144,12 +141,12 @@
   <div class="col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
-        <h5 class="mb-3">{% trans "Aufrufe pro Aufgabe" %}</h5>
+        <h5 class="mb-3">{% trans "Views per feedback" %}</h5>
         <div class="chart-wrap p-3 flex-grow-1" style="height:260px;">
           <canvas id="calls_per_task_chart"></canvas>
         </div>
         {% if not calls_per_task %}
-          <div class="text-muted small mt-2">{% trans "Keine Daten." %}</div>
+          <div class="text-muted small mt-2">{% trans "No data." %}</div>
         {% endif %}
       </div>
     </div>
@@ -160,18 +157,18 @@
     </div>
     <div class="card shadow-sm mb-4">
   <div class="card-body">
-    <h5 class="mb-3">{% trans "Helpfulness-Abdeckung pro Aufgabe" %}</h5>
+    <h5 class="mb-3">{% trans "Helpfulness coverage per task" %}</h5>
 
     <div class="table-responsive">
       <table class="table table-sm table-striped table-hover align-middle w-100">
         <thead class="table-light">
           <tr>
-            <th>{% trans "Aufgabe" %}</th>
-              <th class="text-end">{% trans "Mit Score (%)" %}</th>
-            <th class="text-end">{% trans "Ohne Score (%)" %}</th>
-            <th class="text-end">{% trans "Mit Score" %}</th>
-            <th class="text-end">{% trans "Ohne Score" %}</th>
-              <th class="text-end">{% trans "Gesamt" %}</th>
+            <th>{% trans "Task" %}</th>
+              <th class="text-end">{% trans "With score (%)" %}</th>
+            <th class="text-end">{% trans "Without score (%)" %}</th>
+            <th class="text-end">{% trans "With score" %}</th>
+            <th class="text-end">{% trans "Without score" %}</th>
+              <th class="text-end">{% trans "Total" %}</th>
 
 
           </tr>
@@ -188,7 +185,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted">— {% trans "Keine Daten." %} —</td>
+              <td colspan="6" class="text-center text-muted">— {% trans "No data." %} —</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -228,13 +225,64 @@
 
       const raw = JSON.parse(dataEl.textContent || '[]');
       const points = raw.map(r => ({ x: r.bucket, y: r.count }));
-      const bucketUnit = "{{ bucket }}" === "week" ? "week" : "day";
+      const currentBucket = "{{ bucket }}";
+      const locale =
+        document.documentElement?.lang
+        || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+
+      const bucketUnit = currentBucket === "week" ? "week" : currentBucket === "month" ? "month" : "day";
+      const xScaleOptions = {
+        type: 'time',
+        time: {
+          unit: bucketUnit,
+          displayFormats: {
+            day: 'dd.MM',
+            week: 'dd.MM',
+            month: 'MMMM'
+          }
+        },
+        ticks: {
+          source: 'data'
+        },
+        title: { display: false }
+      };
+
+      if (currentBucket === "month") {
+        xScaleOptions.ticks.callback = function(value) {
+          let timestamp = typeof value === 'number' ? value : Date.parse(value);
+          if (Number.isNaN(timestamp) && typeof this?.getLabelForValue === 'function') {
+            const resolved = this.getLabelForValue(value);
+            timestamp = Date.parse(resolved);
+            if (Number.isNaN(timestamp)) {
+              return resolved;
+            }
+          }
+          if (Number.isNaN(timestamp)) {
+            return value;
+          }
+          return new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(timestamp));
+        };
+      }
+
+      const formatTooltipTitle = (timestamp) => {
+        if (!timestamp || Number.isNaN(timestamp)) {
+          return "";
+        }
+        const date = new Date(timestamp);
+        if (currentBucket === "month") {
+          return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date);
+        }
+        if (currentBucket === "week") {
+          return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+        }
+        return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+      };
 
       window.callsChart = new Chart(ctx, {
         type: 'line',
         data: {
           datasets: [{
-            label: '{% trans "Aufrufe" %}',
+            label: '{% trans "Views" %}',
             data: points,
             borderWidth: 2,
             pointRadius: 2,
@@ -248,10 +296,21 @@
           animation: false,            // kein Flackern
           interaction: { mode: 'index', intersect: false },
           scales: {
-            x: { type: 'time', time: { unit: bucketUnit }, title: { display: true, text: '{% trans "Tage" %}' } },
-            y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: '{% trans "Aufrufe" %}' } }
+            x: xScaleOptions,
+            y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: '{% trans "Views" %}' } }
           },
-          plugins: { legend: { display: false } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  if (!items || !items.length) return "";
+                  const ts = items[0].parsed?.x;
+                  return formatTooltipTitle(ts);
+                }
+              }
+            }
+          }
         }
       });
 
@@ -281,8 +340,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.avg_tokens);
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.avg_tokens);
 
     // Destroy previous chart if any
     if (window.avgTokensTaskChart) {
@@ -296,7 +359,7 @@
       data: {
         labels,
         datasets: [{
-          label: '{% trans "Ø Tokens pro Aufgabe" %}',
+          label: '{% trans "Avg tokens per feedback" %}',
           data: values,
           borderWidth: 1
         }]
@@ -313,7 +376,7 @@
             title: { display: true, text: '{% trans "Tokens" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Aufgabe" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }
@@ -334,8 +397,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.avg_helpfulness); // can be null
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.avg_helpfulness); // can be null
 
     if (window.avgHelpTaskChart) {
       window.avgHelpTaskChart.destroy();
@@ -348,7 +415,7 @@
       data: {
         labels,
         datasets: [{
-          label: '{% trans "Ø Helpfulness" %}',
+          label: '{% trans "Avg helpfulness" %}',
           data: values,
           borderWidth: 1
         }]
@@ -365,7 +432,7 @@
             title: { display: true, text: '{% trans "Helpfulness" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Aufgabe" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }
@@ -386,8 +453,12 @@
     }
 
     const raw = JSON.parse(dataEl.textContent || '[]');
-    const labels = raw.map(r => r.task);
-    const values = raw.map(r => r.count);
+    const locale =
+      document.documentElement?.lang
+      || (typeof navigator !== 'undefined' ? navigator.language : 'en');
+    const normalized = raw.slice().sort((a, b) => (a.task || '').localeCompare(b.task || '', locale, { sensitivity: 'base' }));
+    const labels = normalized.map(r => r.task);
+    const values = normalized.map(r => r.count);
 
     if (window.callsPerTaskChart) {
       window.callsPerTaskChart.destroy();
@@ -400,7 +471,7 @@
       data: {
         labels,
         datasets: [{
-          label: '{% trans "Aufrufe" %}',
+          label: '{% trans "Views" %}',
           data: values,
           borderWidth: 1
         }]
@@ -414,10 +485,10 @@
           x: {
             beginAtZero: true,
             ticks: { precision: 0 },
-            title: { display: true, text: '{% trans "Aufrufe" %}' }
+            title: { display: true, text: '{% trans "Views" %}' }
           },
           y: {
-            title: { display: true, text: '{% trans "Aufgabe" %}' }
+            title: { display: false }
           }
         },
         plugins: { legend: { display: false } }

@@ -82,6 +82,10 @@ msgstr ""
 #: home/templates/pages/crud_feedback.html:16
 #: home/templates/pages/crud_feedback.html:67
 #: home/templates/pages/crud_task.html:9
+#: home/templates/pages/course_metrics.html:169
+#: home/templates/pages/course_metrics.html:316
+#: home/templates/pages/course_metrics.html:368
+#: home/templates/pages/course_metrics.html:420
 msgid "Task"
 msgstr ""
 
@@ -94,6 +98,23 @@ msgstr ""
 #: home/templates/includes/sidebar.html:55
 #: home/templates/pages/crud_feedback.html:9
 msgid "Feedbacks"
+msgstr ""
+
+#: home/templates/pages/crud_feedback.html:9
+msgid "feedback"
+msgstr "Feedback"
+
+#: home/templates/includes/sidebar.html:81
+#: home/templates/pages/assignment_explorer.html:8
+msgid "Assignment Explorer"
+msgstr "Assignment Explorer"
+
+#: home/templates/includes/sidebar.html:74
+msgid "Metrics"
+msgstr "Metrics"
+
+#: home/templates/includes/sidebar.html:64
+msgid "Analysis"
 msgstr ""
 
 #: home/templates/pages/account.html:5
@@ -111,6 +132,232 @@ msgstr ""
 #: home/templates/pages/account.html:13
 msgid "Change Password"
 msgstr ""
+
+#: home/templates/pages/analysis.html:10
+msgid "Feedback Sessions"
+msgstr ""
+
+#: home/templates/pages/analysis.html:15 home/templates/pages/analysis.html:68
+msgid "Timestamp"
+msgstr ""
+
+#: home/templates/pages/analysis.html:17 home/templates/pages/analysis.html:74
+msgid "Task Title"
+msgstr ""
+
+#: home/templates/pages/analysis.html:18 home/templates/pages/analysis.html:77
+msgid "Staff"
+msgstr ""
+
+#: home/templates/pages/analysis.html:19 home/templates/pages/analysis.html:83
+msgid "Helpfulness Score"
+msgstr ""
+
+#: home/templates/pages/analysis.html:43
+msgid ""
+"Click the button below to download all feedback session data as a CSV file."
+msgstr ""
+
+#: home/templates/pages/analysis.html:44
+msgid "Download CSV"
+msgstr ""
+
+#: home/views/feedback_detail.py:123
+#, python-format
+msgid "Token limit exceeded. Please try again at %(time)s."
+msgstr "Token limit exceeded. Please try again at %(time)s."
+
+#: home/templates/pages/analysis.html:60
+msgid "Feedback Session Details"
+msgstr ""
+
+#: home/templates/pages/analysis.html:80
+msgid "Submission"
+msgstr ""
+
+#: home/templates/pages/analysis.html:86
+msgid "Feedback Data"
+msgstr ""
+
+#: home/templates/pages/assignment_explorer.html:10
+msgid "Explore the assignments between criteria, tasks, courses, and language models."
+msgstr "Explore the assignments between courses, feedbacks, criteria, and language models."
+
+#: home/templates/pages/assignment_explorer.html:14
+msgid "Starting level"
+msgstr "Starting level"
+
+#: home/templates/pages/assignment_explorer.html:28
+msgid "No courses are currently available for your user group."
+msgstr "No courses are currently available for your user group."
+
+#: home/templates/pages/assignment_explorer.html:32
+msgid "No assignments between criteria and language models exist yet."
+msgstr "No assignments between criteria and language models exist yet."
+
+#: home/templates/pages/assignment_explorer.html:58 home/templates/pages/assignment_explorer.html:318
+#, python-format
+msgctxt "assignment explorer|course count label"
+msgid "Course"
+msgid_plural "Courses"
+msgstr[0] "Course"
+msgstr[1] "Courses"
+
+#: home/templates/pages/assignment_explorer.html:62 home/templates/pages/assignment_explorer.html:94 home/templates/pages/assignment_explorer.html:322 home/templates/pages/assignment_explorer.html:336
+#, python-format
+msgctxt "assignment explorer|criterion count label"
+msgid "Criterion"
+msgid_plural "Criteria"
+msgstr[0] "Criterion"
+msgstr[1] "Criteria"
+
+#: home/templates/pages/assignment_explorer.html:90 home/templates/pages/assignment_explorer.html:332
+#, python-format
+msgctxt "assignment explorer|task count label"
+msgid "Task"
+msgid_plural "Tasks"
+msgstr[0] "Task"
+msgstr[1] "Tasks"
+
+#: home/templates/pages/assignment_explorer.html:119 home/templates/pages/assignment_explorer.html:133 home/templates/pages/assignment_explorer.html:160 home/templates/pages/assignment_explorer.html:199 home/templates/pages/assignment_explorer.html:250 home/templates/pages/assignment_explorer.html:269 home/templates/pages/assignment_explorer.html:275 home/templates/pages/assignment_explorer.html:378 home/templates/pages/assignment_explorer.html:396 home/templates/pages/assignment_explorer.html:425
+msgid "Inactive"
+msgstr "Inactive"
+
+#: home/templates/pages/assignment_explorer.html:128 home/templates/pages/assignment_explorer.html:213 home/templates/pages/assignment_explorer.html:269 home/templates/pages/assignment_explorer.html:388
+msgid "Rank"
+msgstr "Rank"
+
+#: home/templates/pages/assignment_explorer.html:146
+msgid "No tasks are currently linked to this language model for this course."
+msgstr "No tasks are currently linked to this language model for this course."
+
+#: home/templates/pages/assignment_explorer.html:153 home/templates/pages/assignment_explorer.html:413
+msgid "Criteria without task"
+msgstr "Criteria without task"
+
+#: home/templates/pages/assignment_explorer.html:206
+msgid "Linked tasks"
+msgstr "Linked Feedbacks"
+
+#: home/templates/pages/assignment_explorer.html:225
+msgid "This criterion is currently not assigned to any task."
+msgstr "This criterion is currently not assigned to any task."
+
+#: home/templates/pages/assignment_explorer.html:261
+msgid "Linked criteria"
+msgstr "Linked criteria"
+
+#: home/templates/pages/assignment_explorer.html:286
+msgid "No criteria are currently linked to this task."
+msgstr "No criteria are currently linked to this task."
+
+#: home/templates/pages/assignment_explorer.html:293 home/templates/pages/assignment_explorer.html:350
+msgid "Language models in use"
+msgstr "Language models in use"
+
+#: home/templates/pages/course_metrics.html:7
+msgid "Course Metrics"
+msgstr "Course Metrics"
+
+#: home/templates/pages/course_metrics.html:14
+msgid "Select course"
+msgstr "Select course"
+
+#: home/templates/pages/course_metrics.html:27
+msgid "Start"
+msgstr "Start"
+
+#: home/templates/pages/course_metrics.html:36
+msgid "End"
+msgstr "End"
+
+#: home/templates/pages/course_metrics.html:50
+msgid "Sessions (total)"
+msgstr "Feedbacks (total)"
+
+#: home/templates/pages/course_metrics.html:58
+msgid "Tokens (total)"
+msgstr "Tokens (total)"
+
+#: home/templates/pages/course_metrics.html:66 home/templates/pages/course_metrics.html:351
+msgid "Avg helpfulness"
+msgstr "Ø helpfulness (Course)"
+
+#: home/templates/pages/course_metrics.html:78
+msgid "Avg duration (s)"
+msgstr "Ø Feedback Generation Time (s)"
+
+#: home/templates/pages/course_metrics.html:93
+msgid "Time range"
+msgstr "Time range"
+
+#: home/templates/pages/course_metrics.html:95
+msgid "per day"
+msgstr "per day"
+
+#: home/templates/pages/course_metrics.html:96
+msgid "per week"
+msgstr "per week"
+
+#: home/templates/pages/course_metrics.html:97
+msgid "per month"
+msgstr "per month"
+
+#: home/templates/pages/course_metrics.html:6
+msgid "per selected time range"
+msgstr "per selected time range"
+
+#: home/templates/pages/course_metrics.html:103 home/templates/pages/course_metrics.html:237 home/templates/pages/course_metrics.html:252 home/templates/pages/course_metrics.html:403 home/templates/pages/course_metrics.html:417
+msgid "Views"
+msgstr "Views"
+
+#: home/templates/pages/course_metrics.html:115 home/templates/pages/course_metrics.html:299
+msgid "Avg tokens per feedback"
+msgstr "Avg tokens per feedback"
+
+#: home/templates/pages/course_metrics.html:120 home/templates/pages/course_metrics.html:136 home/templates/pages/course_metrics.html:152 home/templates/pages/course_metrics.html:191
+msgid "No data."
+msgstr "No data."
+
+#: home/templates/pages/course_metrics.html:131
+msgid "Avg helpfulness per feedback"
+msgstr "Avg helpfulness per feedback"
+
+#: home/templates/pages/course_metrics.html:147 home/templates/pages/course_metrics.html:403
+msgid "Views per feedback"
+msgstr "Views per feedback"
+
+#: home/templates/pages/course_metrics.html:163
+msgid "Helpfulness coverage per task"
+msgstr "Helpfulness coverage per task"
+
+#: home/templates/pages/course_metrics.html:170
+msgid "With score (%)"
+msgstr "With score (%)"
+
+#: home/templates/pages/course_metrics.html:171
+msgid "Without score (%)"
+msgstr "Without score (%)"
+
+#: home/templates/pages/course_metrics.html:172
+msgid "With score"
+msgstr "With score"
+
+#: home/templates/pages/course_metrics.html:173
+msgid "Without score"
+msgstr "Without score"
+
+#: home/templates/pages/course_metrics.html:174
+msgid "Total"
+msgstr "Total"
+
+#: home/templates/pages/course_metrics.html:251
+msgid "Days"
+msgstr "Days"
+
+#: home/templates/pages/course_metrics.html:313
+msgid "Tokens"
+msgstr "Tokens"
 
 #: home/templates/pages/crud_course.html:9
 msgid "Courses"
@@ -162,6 +409,9 @@ msgstr ""
 #: home/templates/pages/crud_feedback.html:91
 #: home/templates/pages/crud_task.html:17
 #: home/templates/pages/crud_task.html:71
+#: home/templates/pages/assignment_explorer.html:117
+#: home/templates/pages/assignment_explorer.html:248
+#: home/templates/pages/assignment_explorer.html:376
 msgid "Active"
 msgstr ""
 
@@ -407,23 +657,24 @@ msgstr ""
 msgid "Your Solution"
 msgstr ""
 
-#: home/templates/pages/feedback.html:38
-msgid "Generate Feedback"
+#: home/templates/pages/feedback.html:39
+msgid "Accept notes of use and generate feedback"
 msgstr ""
 
-#: home/templates/pages/feedback.html:40
+#: home/templates/pages/feedback.html:45
 msgid ""
 "The feedback is generated by generative AI. The results may contain errors "
 "or be invented by the system. Check all statements critically before using "
 "them."
 msgstr ""
 
-#: home/templates/pages/feedback.html:43
+#: home/templates/pages/feedback.html:48
 msgid ""
 "\n"
 "By exchanging messages with COFFEE, you agree to our \n"
-"<a href=\"/policies/\">Terms of Use</a> \n"
-"and confirm that you have read our <a href=\"/policies/\">Disclaimer</a>.\n"
+"<a href=\"/policies/\" class=\"text-primary\">Notes of Use</a> \n"
+"and confirm that you have read our <a href=\"/policies/\"\n"
+"                                                                      class=\"text-primary\">Disclaimer</a>.\n"
 msgstr ""
 
 #: home/templates/pages/feedback.html:66
