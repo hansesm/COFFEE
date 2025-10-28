@@ -84,7 +84,12 @@ All configuration is environment-based. Copy `.env.example` to `.env` and custom
 # Django (REQUIRED)
 SECRET_KEY=your-secret-key-here  
 DEBUG=True
-DATABASE_URL=postgres://user:pass@localhost:5432/coffee_db
+DB_PASSWORD=<YOUR_DB_PASSWORD>
+DB_USERNAME=<user>
+DB_HOST=<host>
+DB_PORT=<port>
+DB_NAME=<db>
+DB_PROTOCOL=<postgres|sqlite>
 ```
 ### Custom LLM Providers
 
