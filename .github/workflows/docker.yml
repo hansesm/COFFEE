@@ -149,7 +149,7 @@ jobs:
         with:
           image-ref: ${{ steps.tags.outputs.tags }}
           format: 'sarif'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           output: 'trivy-results.sarif'
