@@ -1,0 +1,66 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: coffee
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbuser -d coffee"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - postgres_data_demo:/var/lib/postgresql/data
+
+  app:
+    image: ghcr.io/hansesm/coffee:latest
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    environment:
+      SECRET_KEY: insecure-demo-secret
+      DEBUG: "true"
+      ALLOWED_HOSTS: "*"
+      DB_PROTOCOL: postgres
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: coffee
+      DB_USERNAME: dbuser
+      DB_PASSWORD: supersecret
+    command:
+      - bash
+      - -lc
+      - >
+        set -euo pipefail;
+        uv run task migrate &&
+        uv run task create-groups &&
+        uv run task clear-demo-data &&
+        uv run task import-demo-data &&
+        uv run task prod
+    ports:
+      - "8000:8000"
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data_demo:/root/.ollama
+    networks:
+      default:
+        aliases:
+          - ollama.local
+
+volumes:
+  postgres_data_demo:
+  ollama_data_demo:

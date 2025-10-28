@@ -2,6 +2,23 @@
 
 AI-powered feedback system for educational institutions using Django and Large Language Models.
 
+## Quick Demo with Docker Compose
+
+Spin up a complete demo environment—including database, migrations, and sample data—using the bundled compose file:
+
+```bash
+docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
+```
+
+This command spins up PostgreSQL, Ollama and the app itself. On startup all migrations run automatically, default users are created, and demo data is imported.  
+Once the logs show that Gunicorn is listening, you can reach the app at [http://localhost:8000](http://localhost:8000). To tear everything down—including demo data—run:
+
+```bash
+docker compose -f docker-compose.demo.yml down -v
+```
+
+Restarting the demo reruns the migrations and will likely fail, so this compose file is meant strictly for a one-off demo environment.
+
 ## Getting Started
 
 1. **Prerequisites**

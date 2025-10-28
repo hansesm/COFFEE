@@ -119,6 +119,11 @@ class Command(BaseCommand):
         if created:
             self.stdout.write(self.style.SUCCESS('Created "Demo Editors" group'))
 
+        admin_user = User.objects.filter(username="admin").first()
+        if admin_user and not admin_user.groups.filter(pk=self.manager_group.pk).exists():
+            admin_user.groups.add(self.manager_group)
+            self.stdout.write(self.style.SUCCESS('Added "admin" user to "manager" group'))
+
     def create_demo_users(self):
         """Create 3 demo users with appropriate groups"""
         self.stdout.write('Creating demo users...')
@@ -502,8 +507,8 @@ class Command(BaseCommand):
             name="Default",
             defaults={
                 "type": ProviderType.OLLAMA,
-                "config": {"host": "http://localhost:11434"},
-                "endpoint": "http://localhost:11434",
+                "config": {},
+                "endpoint": "http://ollama.local:11434",
                 "is_active": True,
             },
         )
@@ -616,4 +621,3 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'  Created random sessions and criterion results for course: {course.course_name}'))
 
         self.stdout.write(self.style.SUCCESS('All demo FeedbackSessions and FeedbackCriterionResults created.'))
-
