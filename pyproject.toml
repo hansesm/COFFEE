@@ -1,6 +1,6 @@
 [project]
 name = "coffee"
-version = "2.0.2"
+version = "2.0.3"
 description = "AI-powered feedback system for educational institutions using Django and Large Language Models."
 readme = "README.md"
 requires-python = ">=3.13"
