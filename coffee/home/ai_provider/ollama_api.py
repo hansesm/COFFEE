@@ -15,7 +15,7 @@ class OllamaClient(AIBaseClient):
     ) -> None:
         self.config = config
         if not self.config.host:
-            raise ValueError("OLLAMA host ist nicht konfiguriert.")
+            raise ValueError("OLLAMA host is not configured.")
 
         self._client: Optional[Client] = None
 

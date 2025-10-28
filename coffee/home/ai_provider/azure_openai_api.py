@@ -23,8 +23,10 @@ class AzureOpenAIClient(AIBaseClient):
     ) -> None:
         self.config = config
         self.logger = logger_ or logger
-        if not self.config.endpoint or not self.config.api_key:
-            raise ValueError("AzureOpenAIClient: endpoint or api_key missing in configuration.")
+        if not self.config.endpoint:
+            raise ValueError("AzureOpenAIClient: endpoint is required in configuration.")
+        if not self.config.api_key:
+            raise ValueError("AzureOpenAIClient: api_key is required in configuration.")
         self._client: Optional[AzureOpenAI] = None
         self._token_estimator = token_estimator
 

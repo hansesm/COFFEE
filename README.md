@@ -2,6 +2,28 @@
 
 AI-powered feedback system for educational institutions using Django and Large Language Models.
 
+## Quick Demo with Docker Compose
+
+Spin up a complete demo environment—including database, Ollama, migrations, and sample data:
+
+```bash
+docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
+```
+
+This command spins up PostgreSQL, Ollama and the app itself. On startup all migrations run automatically, default users are created, and demo data is imported. 
+The download of the default LLM phi4 can take a while. Ollama may run slowly or time out when running in Docker.
+You can adjust the `request_timout` setting in the [Admin Panel](http://localhost:8000/admin/home/llmprovider/1/change/) to prevent this.
+
+In the meantime you can reach the app at [http://localhost:8000](http://localhost:8000). 
+
+To tear everything down run:
+
+```bash
+docker compose -f docker-compose.demo.yml down -v
+```
+
+Restarting the demo reruns the migrations and will likely fail, so this compose file is meant strictly for a one-off demo environment.
+
 ## Getting Started
 
 1. **Prerequisites**
@@ -84,7 +106,12 @@ All configuration is environment-based. Copy `.env.example` to `.env` and custom
 # Django (REQUIRED)
 SECRET_KEY=your-secret-key-here  
 DEBUG=True
-DATABASE_URL=postgres://user:pass@localhost:5432/coffee_db
+DB_PASSWORD=<YOUR_DB_PASSWORD>
+DB_USERNAME=<user>
+DB_HOST=<host>
+DB_PORT=<port>
+DB_NAME=<db>
+DB_PROTOCOL=<postgres|sqlite>
 ```
 ### Custom LLM Providers
 
@@ -96,6 +123,26 @@ Currently supported LLM Providers:
 - **Azure OpenAI** – see [`azure_openai_api.py`](coffee/home/ai_provider/azure_openai_api.py)
 
 Contributions for additional providers such as **LLM Lite**, **AWS Bedrock**, **Hugging Face**, and others are very welcome! 🚀
+
+## LLM Backends
+
+Add providers and models in the Django admin under **LLM Providers** / **LLM Models**. Each backend needs different connection details:
+- **Ollama** – Set `Endpoint` to your Ollama host (e.g. `http://ollama.local:11434` or `http://localhost:11434`). Leave the API key empty unless you enabled token auth; optional TLS settings live in the JSON `config`.
+- **Azure AI** – Use the Inference endpoint that already includes the deployment segment, for example `https://<azure-resource>/openai/deployments/<deployment>`. Add the matching API key.
+- **Azure OpenAI** – Point `Endpoint` to the service base URL like `https://<azure-resource>.cognitiveservices.azure.com/`. Add the matching API key.
+
+## Default Login Credentials
+
+After running `python manage.py create_users_and_groups`, use these credentials:
+
+- **Admin**: username `admin`, password `reverence-referee-lunchbox`
+- **Manager**: username `manager`, password `expediter-saline-untapped`
+
+## Usage
+
+1. **Admin**: Create courses, tasks, and criteria at `/admin/`
+2. **Students**: Submit work and receive AI feedback
+3. **Analysis**: View feedback analytics and export data
 
 ## Docker Deployment
 
@@ -138,25 +185,6 @@ podman-compose down
 # Rebuild and restart
 podman-compose up -d --build
 ```
-
-## LLM Backends
-
-Supports multiple AI backends:
-- **Ollama**: Local or remote Ollama instances with fallback support
-- **Azure OpenAI**: GPT-4, GPT-3.5-turbo deployments
-
-## Default Login Credentials
-
-After running `python manage.py create_users_and_groups`, use these credentials:
-
-- **Admin**: username `admin`, password `reverence-referee-lunchbox`
-- **Manager**: username `manager`, password `expediter-saline-untapped`
-
-## Usage
-
-1. **Admin**: Create courses, tasks, and criteria at `/admin/`
-2. **Students**: Submit work and receive AI feedback
-3. **Analysis**: View feedback analytics and export data
 
 ## Credits
 

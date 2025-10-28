@@ -21,9 +21,7 @@ def test_provider_connection(provider: LLMProvider) -> tuple[bool, str]:
                 stored_provider = LLMProvider.objects.get(pk=provider.pk)
                 api_key = stored_provider.api_key
             except LLMProvider.DoesNotExist:
-                raise ValueError("Please provide a API Key!")
-        if not api_key:
-            raise ValueError("Please provide a API Key!")
+                api_key = None
 
         provider.api_key = api_key
         provider_config, provider_class = SCHEMA_REGISTRY[provider.type]

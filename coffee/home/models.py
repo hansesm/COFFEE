@@ -37,8 +37,8 @@ def get_default_llm():
     )
     llm, _ = LLMModel.objects.get_or_create(
         provider=provider,
-        external_name="phi-4",
-        defaults={"name": "phi-4", "default_params": {}, "is_active": False},
+        external_name="phi4",
+        defaults={"name": "phi4", "default_params": {}, "is_active": False},
     )
     return llm.id
 

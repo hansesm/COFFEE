@@ -49,9 +49,15 @@ class AzureOpenAIClientTests(SimpleTestCase):
         data.update(overrides)
         return AzureOpenAIConfig(**data)
 
-    def test_init_requires_credentials(self):
+    def test_init_requires_endpoint(self):
+        cfg = self._config()
+        cfg.endpoint = None
+        with self.assertRaisesRegex(ValueError, "AzureOpenAIClient: endpoint is required in configuration."):
+            AzureOpenAIClient(cfg)
+
+    def test_init_requires_api_key(self):
         cfg = self._config(api_key=None)
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "AzureOpenAIClient: api_key is required in configuration."):
             AzureOpenAIClient(cfg)
 
     def test_client_obj_initializes_once(self):

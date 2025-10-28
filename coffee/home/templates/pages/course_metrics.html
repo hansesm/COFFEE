@@ -104,9 +104,9 @@
         </div>
         {{ calls_rows|json_script:"calls-data" }}
     </div>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+    <div class="row g-4 mb-4 metrics-chart-row">
   <!-- Ø Tokens pro Aufgabe -->
-  <div class="col">
+  <div class="col metrics-chart-col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
         <h5 class="mb-3">{% trans "Avg tokens per feedback" %}</h5>
@@ -122,7 +122,7 @@
   </div>
 
   <!-- Ø Helpfulness pro Aufgabe -->
-  <div class="col">
+  <div class="col metrics-chart-col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
         <h5 class="mb-3">{% trans "Avg helpfulness per feedback" %}</h5>
@@ -138,7 +138,7 @@
   </div>
 
   <!-- Aufrufe pro Aufgabe -->
-  <div class="col">
+  <div class="col metrics-chart-col">
     <div class="card shadow-sm h-100">
       <div class="card-body d-flex flex-column">
         <h5 class="mb-3">{% trans "Views per feedback" %}</h5>
@@ -203,6 +203,84 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
 <script>
+    function createEllipsisTickFormatter(options = {}) {
+      const ellipsis = '...';
+      const maxCharsCandidate = Number.isFinite(options.maxChars) ? options.maxChars : null;
+      const maxChars =
+        maxCharsCandidate && maxCharsCandidate > ellipsis.length
+          ? maxCharsCandidate
+          : 40;
+
+      const applyCharLimit = (label) => {
+        if (label.length <= maxChars) {
+          return { text: label, suffix: '' };
+        }
+        const sliceLength = Math.max(0, maxChars - ellipsis.length);
+        return {
+          text: label.slice(0, sliceLength),
+          suffix: ellipsis
+        };
+      };
+
+      return function(value) {
+        const rawLabel = this?.getLabelForValue ? this.getLabelForValue(value) : value;
+        if (typeof rawLabel !== 'string') {
+          return rawLabel;
+        }
+
+        const ctx = this?.chart?.ctx;
+        const padding = this?.options?.ticks?.padding ?? 0;
+        const availableWidth = Math.max(0, (this?.width ?? this?.maxWidth ?? 0) - padding - 4);
+
+        if (!ctx || availableWidth <= 0) {
+          const limited = applyCharLimit(rawLabel);
+          if (!limited.text.length) {
+            return limited.suffix || ellipsis;
+          }
+          if (!limited.suffix && limited.text === rawLabel) {
+            return rawLabel;
+          }
+          return limited.text + limited.suffix;
+        }
+
+        const helpers = Chart.helpers ?? Chart._helpers;
+        const font = helpers?.toFont ? helpers.toFont(this?.options?.ticks?.font) : null;
+
+        ctx.save();
+        if (font?.string) {
+          ctx.font = font.string;
+        }
+
+        let { text: truncated, suffix } = applyCharLimit(rawLabel);
+        let candidate = suffix ? truncated + suffix : rawLabel;
+
+        if (ctx.measureText(candidate).width <= availableWidth) {
+          ctx.restore();
+          return candidate;
+        }
+
+        if (!suffix) {
+          suffix = ellipsis;
+          truncated = rawLabel;
+        }
+
+        while (truncated.length > 0 && ctx.measureText(truncated + suffix).width > availableWidth) {
+          truncated = truncated.slice(0, -1);
+        }
+
+        ctx.restore();
+        if (!truncated.length) {
+          return suffix || ellipsis;
+        }
+        if (!suffix && truncated.length === rawLabel.length) {
+          return rawLabel;
+        }
+        return truncated + suffix;
+      };
+    }
+
+    const ellipsisTickFormatter = createEllipsisTickFormatter({ maxChars: 28 });
+
     function renderCallsChart() {
       const canvas = document.getElementById('calls_line_chart');
       const dataEl = document.getElementById('calls-data');
@@ -366,7 +444,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         animation: false,
         indexAxis: 'y', // horizontale Balken – besser für lange Aufgabennamen
         scales: {
@@ -376,7 +454,10 @@
             title: { display: true, text: '{% trans "Tokens" %}' }
           },
           y: {
-            title: { display: false }
+            title: { display: false },
+            ticks: {
+              callback: ellipsisTickFormatter
+            }
           }
         },
         plugins: { legend: { display: false } }
@@ -422,7 +503,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         animation: false,
         indexAxis: 'y',
         scales: {
@@ -432,7 +513,10 @@
             title: { display: true, text: '{% trans "Helpfulness" %}' }
           },
           y: {
-            title: { display: false }
+            title: { display: false },
+            ticks: {
+              callback: ellipsisTickFormatter
+            }
           }
         },
         plugins: { legend: { display: false } }
@@ -478,7 +562,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         animation: false,
         indexAxis: 'y', // horizontal; besser für lange Aufgabennamen
         scales: {
@@ -488,7 +572,10 @@
             title: { display: true, text: '{% trans "Views" %}' }
           },
           y: {
-            title: { display: false }
+            title: { display: false },
+            ticks: {
+              callback: ellipsisTickFormatter
+            }
           }
         },
         plugins: { legend: { display: false } }

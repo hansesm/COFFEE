@@ -49,15 +49,15 @@ class AzureAIConfig(BaseModel):
     )
 
     deployment: str = Field(
-        default="Phi-4",
+        default="phi4",
         json_schema_extra={"admin_visible": True},
     )
     default_model: str = Field(
-        default="Phi-4",
+        default="phi4",
         json_schema_extra={"admin_visible": True},
     )
     model_names: List[str] = Field(
-        default_factory=lambda: ["Phi-4"],
+        default_factory=lambda: ["phi4"],
         json_schema_extra={"admin_visible": False},
     )
 

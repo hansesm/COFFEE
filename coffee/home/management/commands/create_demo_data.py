@@ -119,6 +119,23 @@ class Command(BaseCommand):
         if created:
             self.stdout.write(self.style.SUCCESS('Created "Demo Editors" group'))
 
+        admin_user = User.objects.filter(username="admin").first()
+        if admin_user:
+            added_groups = []
+            if not admin_user.groups.filter(pk=self.manager_group.pk).exists():
+                admin_user.groups.add(self.manager_group)
+                added_groups.append("manager")
+            if not admin_user.groups.filter(pk=self.viewer_group.pk).exists():
+                admin_user.groups.add(self.viewer_group)
+                added_groups.append("Demo Viewers")
+            if not admin_user.groups.filter(pk=self.editor_group.pk).exists():
+                admin_user.groups.add(self.editor_group)
+                added_groups.append("Demo Editors")
+            if added_groups:
+                self.stdout.write(self.style.SUCCESS(
+                    f'Added "admin" user to groups: {", ".join(added_groups)}'
+                ))
+
     def create_demo_users(self):
         """Create 3 demo users with appropriate groups"""
         self.stdout.write('Creating demo users...')
@@ -502,15 +519,15 @@ class Command(BaseCommand):
             name="Default",
             defaults={
                 "type": ProviderType.OLLAMA,
-                "config": {"host": "http://localhost:11434"},
-                "endpoint": "http://localhost:11434",
+                "config": {},
+                "endpoint": "http://ollama.local:11434",
                 "is_active": True,
             },
         )
         llm, _ = LLMModel.objects.get_or_create(
             provider=provider,
-            external_name="phi-4",
-            defaults={"name": "phi-4", "default_params": {}, "is_active": True, "is_default": True},
+            external_name="phi4",
+            defaults={"name": "phi4", "default_params": {}, "is_active": True, "is_default": True},
         )
         return LLMPair(provider=provider, model=llm)
 
@@ -616,4 +633,3 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'  Created random sessions and criterion results for course: {course.course_name}'))
 
         self.stdout.write(self.style.SUCCESS('All demo FeedbackSessions and FeedbackCriterionResults created.'))
-
