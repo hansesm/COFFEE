@@ -509,8 +509,8 @@ class Command(BaseCommand):
         )
         llm, _ = LLMModel.objects.get_or_create(
             provider=provider,
-            external_name="phi-4",
-            defaults={"name": "phi-4", "default_params": {}, "is_active": True, "is_default": True},
+            external_name="phi4",
+            defaults={"name": "phi4", "default_params": {}, "is_active": True, "is_default": True},
         )
         return LLMPair(provider=provider, model=llm)
 

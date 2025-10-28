@@ -712,8 +712,8 @@ class LLMModelAssignmentsViewTest(TestCase):
 
         self.llm = LLMModel.objects.create(
             provider=self.provider,
-            name="Phi-4",
-            external_name="phi-4",
+            name="phi4",
+            external_name="phi4",
             is_active=True,
         )
 
