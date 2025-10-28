@@ -4,7 +4,7 @@ AI-powered feedback system for educational institutions using Django and Large L
 
 ## Quick Demo with Docker Compose
 
-Spin up a complete demo environment—including database, migrations, and sample data—using the bundled compose file:
+Spin up a complete demo environment—including database, Ollama, migrations, and sample data:
 
 ```bash
 docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
