@@ -164,7 +164,7 @@ msgstr "Download CSV"
 
 #: home/views/feedback_detail.py:123
 #, python-format
-msgid "Token limit exceeded. Please try again at %(time)s."
+msgid "Token limit exceeded. Please try again at %(time)s"
 msgstr "Tokenlimitierung überschritten. Bitte versuche es erneut am %(time)s."
 
 #: home/templates/pages/analysis.html:60

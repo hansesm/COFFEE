@@ -164,8 +164,8 @@ msgstr ""
 
 #: home/views/feedback_detail.py:123
 #, python-format
-msgid "Token limit exceeded. Please try again at %(time)s."
-msgstr "Token limit exceeded. Please try again at %(time)s."
+msgid "Token limit exceeded. Please try again at %(time)s"
+msgstr "Token limit exceeded. Please try again at %(time)s"
 
 #: home/templates/pages/analysis.html:60
 msgid "Feedback Session Details"

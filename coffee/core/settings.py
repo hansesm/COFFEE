@@ -300,6 +300,8 @@ TIME_ZONE = "Europe/Berlin"
 
 USE_I18N = True
 
+FORMAT_MODULE_PATH = "coffee.core.formats"
+
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)

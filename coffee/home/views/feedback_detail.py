@@ -8,7 +8,7 @@ from django.http import (
     StreamingHttpResponse, Http404,
 )
 from django.shortcuts import get_object_or_404, render
-from django.utils import timezone
+from django.utils import timezone, formats
 from django.utils.translation import gettext as _
 
 from coffee.home.forms import (
@@ -113,14 +113,14 @@ async def feedback_stream(request, feedback_uuid, criteria_uuid):
         reset_anchor = provider.last_reset_at
         reset_eta_utc = reset_anchor + provider.token_reset_interval
         reset_eta_local = timezone.localtime(reset_eta_utc)
-        formatted = reset_eta_local.strftime("%d.%m.%Y %H:%M")
+        formatted = formats.date_format(reset_eta_local, "SHORT_DATETIME_FORMAT", use_l10n=True)
 
         await sync_to_async(provider.roll_window_optimistic)()
         quoata_exceeded = await sync_to_async(provider.soft_limit_exceeded)(0)
         if quoata_exceeded:
             logger.warning("Quota exceeded")
             return HttpResponseBadRequest(
-                _("Token limit exceeded. Please try again at %(time)s.") % {"time": formatted}
+                _("Token limit exceeded. Please try again at %(time)s") % {"time": formatted}
             )
 
 
