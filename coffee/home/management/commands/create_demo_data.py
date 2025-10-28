@@ -13,7 +13,7 @@ from coffee.home.models import (
 )
 from django.utils import timezone
 
-from home.registry import ProviderType
+from coffee.home.registry import ProviderType
 
 
 class LLMPair(BaseModel):
