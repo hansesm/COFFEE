@@ -23,8 +23,10 @@ class AzureAIClient(AIBaseClient):
                  token_estimator: TokenEstimatorStrategy = RoughStrategy()) -> None:
         self.config = config
         self.logger = logger_ or logger
-        if not self.config.endpoint or not self.config.api_key:
-            raise ValueError("AzureAIClient: endpoint oder api_key fehlen in AzureAIConfig.")
+        if not self.config.endpoint:
+            raise ValueError("AzureAIClient: endpoint is required in AzureAIConfig.")
+        if not self.config.api_key:
+            raise ValueError("AzureAIClient: api_key is required in AzureAIConfig.")
         self._client: Optional[ChatCompletionsClient] = None
         self._token_estimator = token_estimator
 
