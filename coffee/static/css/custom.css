@@ -958,3 +958,15 @@ a:hover {
 
 .chart-wrap { height: 220px; }
 #calls_line_chart { max-height: 100%; }
+
+.metrics-chart-row .metrics-chart-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+@media (min-width: 1400px) {
+    .metrics-chart-row .metrics-chart-col {
+        flex: 0 0 33.3333%;
+        max-width: 33.3333%;
+    }
+}
