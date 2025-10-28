@@ -60,7 +60,8 @@ class AzureAIClientTests(SimpleTestCase):
         return AzureAIConfig(**data)
 
     def test_init_requires_endpoint(self):
-        cfg = self._config(endpoint=None)
+        cfg = self._config()
+        cfg.endpoint = None
         with self.assertRaisesRegex(ValueError, "AzureAIClient: endpoint is required in AzureAIConfig."):
             AzureAIClient(cfg)
 

@@ -50,7 +50,8 @@ class AzureOpenAIClientTests(SimpleTestCase):
         return AzureOpenAIConfig(**data)
 
     def test_init_requires_endpoint(self):
-        cfg = self._config(endpoint=None)
+        cfg = self._config()
+        cfg.endpoint = None
         with self.assertRaisesRegex(ValueError, "AzureOpenAIClient: endpoint is required in configuration."):
             AzureOpenAIClient(cfg)
 
