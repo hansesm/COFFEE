@@ -119,6 +119,26 @@ Currently supported LLM Providers:
 
 Contributions for additional providers such as **LLM Lite**, **AWS Bedrock**, **Hugging Face**, and others are very welcome! 🚀
 
+## LLM Backends
+
+Add providers and models in the Django admin under **LLM Providers** / **LLM Models**. Each backend needs different connection details:
+- **Ollama** – Set `Endpoint` to your Ollama host (e.g. `http://ollama.local:11434` or `http://localhost:11434`). Leave the API key empty unless you enabled token auth; optional TLS settings live in the JSON `config`.
+- **Azure AI** – Use the Inference endpoint that already includes the deployment segment, for example `https://<azure-resource>/openai/deployments/<deployment>`. Add the matching API key.
+- **Azure OpenAI** – Point `Endpoint` to the service base URL like `https://<azure-resource>.cognitiveservices.azure.com/`. Add the matching API key.
+
+## Default Login Credentials
+
+After running `python manage.py create_users_and_groups`, use these credentials:
+
+- **Admin**: username `admin`, password `reverence-referee-lunchbox`
+- **Manager**: username `manager`, password `expediter-saline-untapped`
+
+## Usage
+
+1. **Admin**: Create courses, tasks, and criteria at `/admin/`
+2. **Students**: Submit work and receive AI feedback
+3. **Analysis**: View feedback analytics and export data
+4. 
 ## Docker Deployment
 
 ```bash
@@ -160,25 +180,6 @@ podman-compose down
 # Rebuild and restart
 podman-compose up -d --build
 ```
-
-## LLM Backends
-
-Supports multiple AI backends:
-- **Ollama**: Local or remote Ollama instances with fallback support
-- **Azure OpenAI**: GPT-4, GPT-3.5-turbo deployments
-
-## Default Login Credentials
-
-After running `python manage.py create_users_and_groups`, use these credentials:
-
-- **Admin**: username `admin`, password `reverence-referee-lunchbox`
-- **Manager**: username `manager`, password `expediter-saline-untapped`
-
-## Usage
-
-1. **Admin**: Create courses, tasks, and criteria at `/admin/`
-2. **Students**: Submit work and receive AI feedback
-3. **Analysis**: View feedback analytics and export data
 
 ## Credits
 
