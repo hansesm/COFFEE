@@ -332,11 +332,11 @@ msgid "Helpfulness coverage per task"
 msgstr "Helpfulness coverage per task"
 
 #: home/templates/pages/course_metrics.html:170
-msgid "With score (%)"
+msgid "with_score_perc"
 msgstr "With score (%)"
 
 #: home/templates/pages/course_metrics.html:171
-msgid "Without score (%)"
+msgid "without_score_perc"
 msgstr "Without score (%)"
 
 #: home/templates/pages/course_metrics.html:172

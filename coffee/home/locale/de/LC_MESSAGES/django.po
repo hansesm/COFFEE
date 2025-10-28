@@ -332,20 +332,20 @@ msgid "Helpfulness coverage per task"
 msgstr "Helpfulness-Abdeckung pro Aufgabe"
 
 #: home/templates/pages/course_metrics.html:170
-msgid "With score (%)"
-msgstr "Mit Score (%)"
+msgid "with_score_perc"
+msgstr "Mit Bewertung (%)"
 
 #: home/templates/pages/course_metrics.html:171
-msgid "Without score (%)"
-msgstr "Ohne Score (%)"
+msgid "without_score_perc"
+msgstr "Ohne Bewertung (%)"
 
 #: home/templates/pages/course_metrics.html:172
 msgid "With score"
-msgstr "Mit Score"
+msgstr "Mit Bewertung"
 
 #: home/templates/pages/course_metrics.html:173
 msgid "Without score"
-msgstr "Ohne Score"
+msgstr "Ohne Bewertung"
 
 #: home/templates/pages/course_metrics.html:174
 msgid "Total"
