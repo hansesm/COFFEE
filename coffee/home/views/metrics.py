@@ -243,7 +243,7 @@ class CourseMetricsView(ManagerRequiredMixin, View):
                     default=Value(0.0), output_field=FloatField()
                 ),
             )
-            .order_by("-without_help", "-pct_without")
+            .order_by("task_title")
         )
 
         help_coverage_per_task = [

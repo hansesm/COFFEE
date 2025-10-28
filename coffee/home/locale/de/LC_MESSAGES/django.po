@@ -328,8 +328,8 @@ msgid "Views per feedback"
 msgstr "Aufrufe pro Feedback"
 
 #: home/templates/pages/course_metrics.html:163
-msgid "Helpfulness coverage per task"
-msgstr "Helpfulness-Abdeckung pro Aufgabe"
+msgid "Helpfulness coverage per feedback"
+msgstr "Helpfulness-Abdeckung pro Feedback"
 
 #: home/templates/pages/course_metrics.html:170
 msgid "with_score_perc"
