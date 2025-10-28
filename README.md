@@ -10,8 +10,13 @@ Spin up a complete demo environment—including database, migrations, and sample
 docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
 ```
 
-This command spins up PostgreSQL, Ollama and the app itself. On startup all migrations run automatically, default users are created, and demo data is imported.  
-Once the logs show that Gunicorn is listening, you can reach the app at [http://localhost:8000](http://localhost:8000). To tear everything down—including demo data—run:
+This command spins up PostgreSQL, Ollama and the app itself. On startup all migrations run automatically, default users are created, and demo data is imported. 
+The download of the default LLM phi4 can take a while. Ollama may run slowly or time out when running in Docker.
+You can adjust the `request_timout` setting in the [Admin Panel](http://localhost:8000/admin/home/llmprovider/1/change/) to prevent this.
+
+In the meantime you can reach the app at [http://localhost:8000](http://localhost:8000). 
+
+To tear everything down run:
 
 ```bash
 docker compose -f docker-compose.demo.yml down -v
@@ -138,7 +143,7 @@ After running `python manage.py create_users_and_groups`, use these credentials:
 1. **Admin**: Create courses, tasks, and criteria at `/admin/`
 2. **Students**: Submit work and receive AI feedback
 3. **Analysis**: View feedback analytics and export data
-4. 
+
 ## Docker Deployment
 
 ```bash

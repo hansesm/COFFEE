@@ -41,7 +41,6 @@ services:
         set -euo pipefail;
         uv run task migrate &&
         uv run task create-groups &&
-        uv run task clear-demo-data &&
         uv run task import-demo-data &&
         uv run task prod
     ports:
@@ -55,11 +54,19 @@ services:
     ports:
       - "11434:11434"
     volumes:
+      - ./start-ollama.sh:/start-ollama.sh
       - ollama_data_demo:/root/.ollama
+    entrypoint: [ "/bin/sh", "/start-ollama.sh" ]
     networks:
       default:
         aliases:
           - ollama.local
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 
 volumes:
   postgres_data_demo:

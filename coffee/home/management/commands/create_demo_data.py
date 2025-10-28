@@ -120,9 +120,21 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Created "Demo Editors" group'))
 
         admin_user = User.objects.filter(username="admin").first()
-        if admin_user and not admin_user.groups.filter(pk=self.manager_group.pk).exists():
-            admin_user.groups.add(self.manager_group)
-            self.stdout.write(self.style.SUCCESS('Added "admin" user to "manager" group'))
+        if admin_user:
+            added_groups = []
+            if not admin_user.groups.filter(pk=self.manager_group.pk).exists():
+                admin_user.groups.add(self.manager_group)
+                added_groups.append("manager")
+            if not admin_user.groups.filter(pk=self.viewer_group.pk).exists():
+                admin_user.groups.add(self.viewer_group)
+                added_groups.append("Demo Viewers")
+            if not admin_user.groups.filter(pk=self.editor_group.pk).exists():
+                admin_user.groups.add(self.editor_group)
+                added_groups.append("Demo Editors")
+            if added_groups:
+                self.stdout.write(self.style.SUCCESS(
+                    f'Added "admin" user to groups: {", ".join(added_groups)}'
+                ))
 
     def create_demo_users(self):
         """Create 3 demo users with appropriate groups"""
