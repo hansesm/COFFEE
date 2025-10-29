@@ -7,6 +7,8 @@ AI-powered feedback system for educational institutions using Django and Large L
 Spin up a complete demo environment—including database, Ollama, migrations, and sample data:
 
 ```bash
+git clone <repository-url>
+cd COFFEE
 docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
 ```
 
