@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip to latest version (fixes CVE-2025-8869)
+RUN pip install --upgrade pip
+
 # Install uv
 RUN pip install uv
 

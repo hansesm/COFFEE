@@ -4,27 +4,36 @@ AI-powered feedback system for educational institutions using Django and Large L
 
 ## Quick Demo with Docker Compose
 
-Spin up a complete demo environment—including database, Ollama, migrations, and sample data:
+Try COFFEE instantly with a single command! Download the [docker-compose.demo.yml](docker-compose.demo.yml) file and run:
 
 ```bash
-git clone <repository-url>
-cd COFFEE
-docker compose -f docker-compose.demo.yml up #uses ghcr.io/hansesm/coffee:latest
+docker compose -f docker-compose.demo.yml up
 ```
 
-This command spins up PostgreSQL, Ollama and the app itself. On startup all migrations run automatically, default users are created, and demo data is imported. 
-The download of the default LLM phi4 can take a while. Ollama may run slowly or time out when running in Docker.
-You can adjust the `request_timout` setting in the [Admin Panel](http://localhost:8000/admin/home/llmprovider/1/change/) to prevent this.
+Or use this one-liner (macOS/Linux/Windows):
 
-In the meantime you can reach the app at [http://localhost:8000](http://localhost:8000). 
+```bash
+curl -O https://raw.githubusercontent.com/hansesm/coffee/main/docker-compose.demo.yml && docker compose -f docker-compose.demo.yml up
+```
 
-To tear everything down run:
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/hansesm/coffee/main/docker-compose.demo.yml -OutFile docker-compose.demo.yml; docker compose -f docker-compose.demo.yml up
+```
+
+This spins up PostgreSQL, Ollama (with phi4 model), and the app itself using the pre-built image `ghcr.io/hansesm/coffee:latest`. On startup, migrations run automatically, default users are created, and demo data is imported.
+
+**Note:** The phi4 model download can take a while. Ollama may run slowly or time out when running in Docker. You can adjust the `request_timeout` setting in the [Admin Panel](http://localhost:8000/admin/home/llmprovider/1/change/) to prevent timeouts.
+
+Access the app at [http://localhost:8000](http://localhost:8000).
+
+**To tear everything down:**
 
 ```bash
 docker compose -f docker-compose.demo.yml down -v
 ```
 
-Restarting the demo reruns the migrations and will likely fail, so this compose file is meant strictly for a one-off demo environment.
+**Important:** Restarting the demo reruns the migrations and will likely fail, so this compose file is meant strictly for a one-off demo environment.
 
 ## Getting Started
 
