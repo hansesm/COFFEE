@@ -2,6 +2,9 @@
 
 AI-powered feedback system for educational institutions using Django and Large Language Models.
 
+<img width="1231" height="760" alt="COFFEES Startpage" src="https://github.com/user-attachments/assets/50084d1d-99f6-414e-b1a2-ebbf1a0021e9" />
+
+
 ## Quick Demo with Docker Compose
 
 Try COFFEE instantly with a single command! Download the [docker-compose.demo.yml](docker-compose.demo.yml) file and run:
