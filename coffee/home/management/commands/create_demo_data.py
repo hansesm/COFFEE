@@ -38,6 +38,17 @@ class Command(BaseCommand):
         if options['clear']:
             self.clear_demo_data()
 
+        # Check if demo data already exists
+        demo_courses = Course.objects.filter(course_name__startswith='Demo Course')
+        if demo_courses.exists() and not options['clear']:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'Demo data already exists ({demo_courses.count()} demo courses found). '
+                    'Use --clear flag to recreate it.'
+                )
+            )
+            return
+
         with transaction.atomic():
             self.create_demo_groups()
             self.create_demo_users()

@@ -36,7 +36,7 @@ Access the app at [http://localhost:8000](http://localhost:8000).
 docker compose -f docker-compose.demo.yml down -v
 ```
 
-**Important:** Restarting the demo reruns the migrations and will likely fail, so this compose file is meant strictly for a one-off demo environment.
+The demo environment is restart-safe. If you stop and restart the containers, existing data will be preserved and the startup commands will detect existing users and demo data automatically.
 
 ## Getting Started
 

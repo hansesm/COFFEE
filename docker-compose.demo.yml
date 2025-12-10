@@ -39,9 +39,13 @@ services:
       - -lc
       - >
         set -euo pipefail;
+        echo "Running migrations..." &&
         uv run task migrate &&
+        echo "Creating users and groups..." &&
         uv run task create-groups &&
+        echo "Importing demo data..." &&
         uv run task import-demo-data &&
+        echo "Starting production server..." &&
         uv run task prod
     ports:
       - "8000:8000"
