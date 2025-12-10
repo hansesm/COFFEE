@@ -1,6 +1,6 @@
 [project]
 name = "coffee"
-version = "2.0.5"
+version = "2.0.6"
 description = "AI-powered feedback system for educational institutions using Django and Large Language Models."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -14,7 +14,7 @@ dependencies = [
     "charset-normalizer==3.4.3",
     "distro==1.9.0",
     "dj-database-url==3.0.1",
-    "django==5.2.7",
+    "django==5.2.8",
     "django-extensions==4.1",
     "gunicorn==23.0.0",
     "h11==0.16.0",
@@ -40,7 +40,7 @@ dependencies = [
     "tqdm==4.67.1",
     "typing-extensions==4.15.0",
     "typing-inspection==0.4.2",
-    "urllib3==2.5.0",
+    "urllib3==2.6.0",
     "uvicorn>=0.37.0",
     "whitenoise==6.11.0",
 ]
