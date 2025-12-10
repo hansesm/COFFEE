@@ -73,7 +73,7 @@ jobs:
   docker:
     needs: [build, test]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/') && (github.ref_name == 'main' || github.ref_name == 'dev')
+    if: (startsWith(github.ref, 'refs/heads/') && (github.ref_name == 'main' || github.ref_name == 'dev')) || startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       packages: write
@@ -93,6 +93,9 @@ jobs:
       run: |
         if [ "${GITHUB_REF_NAME}" = "dev" ]; then
           echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}-dev" >> $GITHUB_OUTPUT
+        elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          # For tags, create both versioned and latest tags
+          echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
         else
           echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
         fi
@@ -140,6 +143,9 @@ jobs:
         run: |
           if [ "${GITHUB_REF_NAME}" = "dev" ]; then
             echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}-dev" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            # For tags, scan the versioned tag
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" >> $GITHUB_OUTPUT
           else
             echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" >> $GITHUB_OUTPUT
           fi
