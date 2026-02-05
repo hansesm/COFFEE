@@ -111,8 +111,19 @@ echo -e "${YELLOW}⏳ Waiting for application to start...${NC}"
 sleep 20
 
 # Run database migrations
-echo -e "${YELLOW}🔄 Running database migrations...${NC}"
-podman exec coffee-app python manage.py migrate
+echo -e "${YELLOW}🔄 Initializing Python environment and running migrations...${NC}"
+podman exec coffee-app sh -lc '
+    set -e
+    cd /app
+    pip install -U uv >/dev/null 2>&1 || true
+    uv sync --frozen || uv sync
+    uv run python manage.py migrate
+    uv run python manage.py create_users_and_groups
+'
+
+#Ensure app picks up the fresh environment
+echo -e "${YELLOW} Restarting application...${NC}"
+podman restart coffee-app
 
 # Create initial users
 #echo -e "${YELLOW}👥 Creating initial users...${NC}"
