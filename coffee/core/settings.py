@@ -153,30 +153,26 @@ LOCALE_PATHS = [
 # Set the default language
 LANGUAGE_CODE = "en"
 
-ALLOWED_HOSTS = [
-    "https://feeedback-impact.fernuni-hagen.de",
-    "https://coffee.fernuni-hagen.de",
-    "http://localhost",
-    "https://localhost",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-    "127.0.0.1",
-    "feedback-impact.fernuni-hagen.de",
-    "coffee.fernuni-hagen.de",
-    "localhost",
-    "localhost:8000",
-    "localhost:8001",
-    "testserver",  # For Django tests
-]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://feedback-impact.fernuni-hagen.de",
-    "https://coffee.fernuni-hagen.de",
-    "http://localhost",
-    "https://localhost",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-]
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == [""]:
+    ALLOWED_HOSTS = [
+        "http://localhost",
+        "https://localhost",
+        "http://127.0.0.1",
+        "https://127.0.0.1",
+        "localhost:8000",
+    ]
+
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost,http://127.0.0.1").split(",")
+
+if not CSRF_TRUSTED_ORIGINS or CSRF_TRUSTED_ORIGINS == [""]:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost",
+        "https://localhost",
+        "http://127.0.0.1",
+        "https://127.0.0.1",
+    ]
 
 # Application definition
 
