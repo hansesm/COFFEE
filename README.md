@@ -281,8 +281,12 @@ Ollama needs to be commented out in three places:
 1. Under the ollama: section
 2. Under app:, where ollama: is referenced with the condition: service_healthy
 3. Under volumes: where the Ollama volume is defined
+<img width="983" height="1109" alt="Screenshot 2026-02-05 134909" src="https://github.com/user-attachments/assets/4d1e6a79-7d1f-4ed5-b99b-0500187052f3" />
+<img width="882" height="344" alt="Screenshot 2026-02-05 134852" src="https://github.com/user-attachments/assets/e88bca43-509e-4988-8ebb-bbad938925fe" />
+
 
 Make sure you have commented out all relevant entries.
+
 
 
 ```bash
