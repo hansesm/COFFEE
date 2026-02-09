@@ -167,29 +167,139 @@ docker run -p 8000:8000 --env-file .env coffee #On Windows add '--network host'
 
 ## Podman Deployment (RedHat/RHEL)
 
-For RedHat Enterprise Linux systems using Podman:
+**For RedHat Enterprise Linux systems using Podman:**
+
+
+### Full version
 
 ```bash
-# Install podman-compose if not already installed
-sudo dnf install podman-compose
+# Install podman if not already installed
+sudo dnf install podman
+# To see if you already have podman
+podman --version
 
-# Copy and configure environment
+# Install git if not already installed
+sudo dnf install git
+# To see if you already have git
+git --version
+
+# Install python3 if not already installed 
+sudo dnf install python3
+# To see if you already have python3
+python3 --version
+
+# Optional:Install nano if not already installed
+sudo dnf install nano
+# To see if you already have nano
+nano --version
+
+# Clone the COFFEE repository
+git clone <REPOSITORY-URL>
+
+# Enter the COFFEE directory
+cd COFFEE
+
+# Copy and configure the environment
 cp .env.example .env
-# Edit .env with your actual configuration values
 
-# Deploy with podman-compose
-podman-compose -f podman-compose.yaml up -d
+# Edit .env with your actual configuration values (e.g. with nano)
+nano .env
 
-# Create initial users and database schema
-podman exec -it coffee_app python manage.py migrate
-podman exec -it coffee_app python manage.py create_users_and_groups
+# Make the startup script executable (only required once)
+chmod +x run-podman.sh
 
-# Access the application
-curl http://localhost:8000
+# Start COFFEE
+./run-podman.sh
+
+# Verify that all containers are running
+podman pod ps
+podman ps -a
+
+# Test if the application is reachable
+curl -I http://localhost:8000
+
+# Now open the browser:
+# http://<Your IP or localhost>:8000
+```
+
+### Demo version
+```bash
+# Install podman if not already installed
+sudo dnf install podman
+# To see if you already have podman
+podman --version
+
+# Install python3 if not already installed 
+sudo dnf install python3
+# To see if you already have python3
+python3 --version
+
+# Install pip3 if not already installed 
+sudo dnf install pip3
+# To see if you already have pip3
+pip3 --version
+
+# Install podman-compose if not already installed (via pip)
+python3 -m pip install --user podman-compose
+# Verify if podman-compose is available
+which podman-compose
+
+# Clone the full repository (required for deployment)
+git clone <REPOSITORY-URL>
+
+# Enter the COFFEE directory
+cd COFFEE
+
+# Copy and configure the environment 
+cp .env.example .env
+# Edit .env with your configuration values
+nano .env
+```
+
+### Important: If your system has limited available disk space
+
+You must comment out the **Ollama** service in the `docker-compose.demo.yml` file **before** running the startup 
+command.
+
+The Ollama images are very large and can quickly consume your storage.
+If they are not disabled, the command:
+
+```bash
+podman-compose -f docker-compose.demo.yml up -d
+```
+
+may fail and leave your environment in a broken state due to insufficient disk space.
+
+Please be aware that if Ollama is removed or disabled, the **LLM Tool will no longer function**, as it depends on 
+Ollama.
+
+#### How to disable Ollama
+
+Open the `docker-compose.demo.yml` file **before** running the startup command.
+Ollama needs to be commented out in three places:
+
+1. Under the ollama: section
+2. Under app:, where ollama: is referenced with the condition: service_healthy
+3. Under volumes: where the Ollama volume is defined
+
+Make sure you have commented out all relevant entries.
+
+
+```bash
+# Deploy with podman compose
+podman-compose -f docker-compose.demo.yml up -d
+
+# Test if the application is reachable 
+curl -I http://localhost:8000
+
+# Now open the browser:
+# http://<Your IP or localhost>:8000
 ```
 
 **Useful Podman commands:**
+
 ```bash
+
 # View logs
 podman-compose logs -f coffee_app
 
