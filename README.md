@@ -276,14 +276,64 @@ Ollama.
 #### How to disable Ollama
 
 Open the `docker-compose.demo.yml` file **before** running the startup command.
-Ollama needs to be commented out in three places:
+Ollama needs to be commented out (#) in three places:
 
 1. Under the ollama: section
-2. Under app:, where ollama: is referenced with the condition: service_healthy
-3. Under volumes: where the Ollama volume is defined
-<img width="983" height="1109" alt="Screenshot 2026-02-05 134909" src="https://github.com/user-attachments/assets/4d1e6a79-7d1f-4ed5-b99b-0500187052f3" />
-<img width="882" height="344" alt="Screenshot 2026-02-05 134852" src="https://github.com/user-attachments/assets/e88bca43-509e-4988-8ebb-bbad938925fe" />
+2. Under volumes: where the Ollama volume is defined
+3. Under app:, where ollama: is referenced with the condition: service_started
 
+It should look something like this:
+
+```bash
+# ollama:
+ #  image: ollama/ollama:latest
+ # restart: unless-stopped
+ # environment:
+ #   OLLAMA_HOST: 0.0.0.0
+ # ports:
+ #   - "11434:11434"
+ # volumes:
+ #   - ollama_data_demo:/root/.ollama
+ # entrypoint:
+ #   - /bin/sh
+ #   - -c
+ #   - |
+ #     set -e
+  #     # Start Ollama server in the background
+  #    ollama serve &
+  #    # Short pause to ensure the server is up
+  #    sleep 3
+  #    # Download models you want preloaded
+  #    echo "Pulling models..."
+  #     ollama pull phi4 || true
+  #     echo "All models pulled. Ollama is ready."
+  #    # Keep the server process alive
+  #     wait
+  # networks:
+  #   default:
+  #     aliases:
+  #       - ollama.local
+  # healthcheck:
+  #   test: [ "CMD", "ollama", "list" ]
+  #   interval: 10s
+  #   timeout: 5s
+  #   retries: 12
+
+volumes:
+  postgres_data_demo:
+ # ollama_data_demo:
+
+[...]
+
+app:
+  image: ghcr.io/hansesm/coffee:latest
+  depends_on:
+    db:
+      condition: service_healthy
+#    ollama:
+#      condition: service_started
+
+```
 
 Make sure you have commented out all relevant entries.
 
