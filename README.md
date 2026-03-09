@@ -219,6 +219,33 @@ curl -I http://localhost:8000
 # http://<Your IP or localhost>:8000
 ```
 
+## Creating a New Release
+
+To release a new version of COFFEE, follow these steps. The GitHub Actions CI/CD pipeline will automatically build the Docker image and push it to the GitHub Container Registry (`ghcr.io`) upon pushing a new version tag.
+
+1. **Update the version number** in `pyproject.toml`:
+   ```toml
+   [project]
+   name = "coffee"
+   version = "X.Y.Z"  # Increment this to your new version
+   ```
+
+2. **Commit your changes**:
+   ```bash
+   git add pyproject.toml uv.lock  # Include any other files you modified
+   git commit -m "chore: bump version to X.Y.Z"
+   git push origin main
+   ```
+
+3. **Create and push a Git tag**:
+   The tag must start with `v` (e.g., `vX.Y.Z`) to trigger the Docker build workflow.
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+Once the tag is pushed, you can monitor the [GitHub Actions tab](https://github.com/hansesm/coffee/actions) to watch the Docker image being built and pushed to the registry.
+
 ## Credits
 
 This project was developed with assistance from [Claude Code](https://claude.ai/code), Anthropic's AI coding assistant.
