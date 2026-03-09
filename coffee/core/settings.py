@@ -150,18 +150,15 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, "locale/"),
 ]
 
-# Set the default language
+# Application definition# Set the default language
 LANGUAGE_CODE = "en"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 if not ALLOWED_HOSTS or ALLOWED_HOSTS == [""]:
     ALLOWED_HOSTS = [
-        "http://localhost",
-        "https://localhost",
-        "http://127.0.0.1",
-        "https://127.0.0.1",
-        "localhost:8000",
+        "localhost",
+        "127.0.0.1",
     ]
 
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost,http://127.0.0.1").split(",")
@@ -173,8 +170,6 @@ if not CSRF_TRUSTED_ORIGINS or CSRF_TRUSTED_ORIGINS == [""]:
         "http://127.0.0.1",
         "https://127.0.0.1",
     ]
-
-# Application definition
 
 INSTALLED_APPS = [
     "django_extensions",
@@ -324,8 +319,8 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 1209600  # Two weeks
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
 
